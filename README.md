@@ -1,2 +1,96 @@
-# BillyJasonTeamUp
-A walkthrough afe deployments with minimal downtime and fast rollback capability
+# Project Goal Overview
+This README is for a walkthrough for a deployments with minimal downtime and fast rollback capability. This repo and demostration will take you on how a deployment goes from Github, utilizing Github Actions, AWS Services, and monitoring. 
+
+Within this repository, I will automate application deployments using infrastructure as code and a blue-green deployment strategy practice. This includes provisioning, deploying, switching traffic, and rolling back all while using free-tier AWS services.
+
+## Key Features
+- ✅ **CI/CD Workflow:** Triggered by a GitHub push to `main` branch using GitHub Actions
+- ✅ **Terraform-Based Provisioning:** EC2, IAM, Security Groups
+- ✅ **Blue-Green Deployment:** Switch traffic between two environments
+- ✅ **Zero-Downtime Rollouts:** Promote new version after testing
+- ✅ **Rollback Support:** Easily revert to previous environment
+- ✅ **Free-Tier Friendly:** Uses AWS Free Tier services only to host the application environments
+- ✅ **Flask (Python):** Lightweight web application
+- ✅ **Cloud-Init:** Auto-configure EC2 instances at boot
+
+## Tech Stack
+| Tool             | Purpose                                 |
+|------------------|------------------------------------------|
+| GitHub Actions   | CI/CD automation for build & deployment |
+| Terraform        | Infrastructure as Code (IaC)            |
+| AWS EC2 (Free Tier) | Host the application environments       |
+| IAM              | Secure AWS access via Terraform         |
+| Flask (Python)   | Lightweight web application              |
+| Cloud-Init       | Auto-configure EC2 instances at boot    |
+
+## Terraform
+This project demonstrates a fully automated CI/CD pipeline for zero-downtime deployments using a blue-green deployment strategy on AWS EC2, managed by Terraform and triggered by GitHub Actions. Terraform is a form of IaC that allows you to build, change, and version infrastructure safely and efficiently.
+
+### Terraform files:
+- `main.tf`: Main configuration and provider setup
+- `variables.tf`: Input variables
+- `outputs.tf`: Output values
+- `iam-users.tf`: Provision IAM users for EC2 management
+- `terraform.tfvars`: Sets variables for Terraform and allows GitHub Actions to pick up variable values automatically
+- `deploy.yml`: GitHub Actions workflow for CI/CD
+
+
+### Pipeline steps
+1. Code push to `main` triggers the workflow.
+2. Terraform provisions and updates infrastructure, maintaining both blue and green EC2 instances.
+3. New code is deployed to the inactive environment (blue or green).
+4. Automated tests run against the inactive environment.
+5. If tests pass, the load balancer switches traffic to the new environment by updating the `active_env` variable and re-applying Terraform.
+6. Outputs include the load balancer DNS and both EC2 public IPs for verification.
+
+Checkout [this article](https://www.terraform.io/intro/index.html) for more information Terraform and it's many uses.
+
+## Provisioning IAM Users for EC2 Management
+You can provision new AWS IAM users who will have full access to manage the EC2 instances created by this project. To add users:
+
+1. Edit the `user_name` variable in `iam-user.tf` or provide it via a `terraform.tfvars` file, e.g.:
+   ```hcl
+   user_name = ["alice"]
+   ```
+2. Run `terraform apply` to create the users and generate their access keys.
+3. The output will include the access key and secret for each user (sensitive output).
+4. Each user will have the `AmazonEC2FullAccess` policy attached, allowing them to manage EC2 resources in your AWS account.
+
+You can add or remove users by updating the `user_name` list and reapplying Terraform.
+
+
+
+---
+
+## Key Features
+- ✅ **CI/CD Workflow:** Triggered by GitHub push to `main` branch
+- ✅ **Terraform-Based Provisioning:** EC2, IAM, Security Groups
+- ✅ **Blue-Green Deployment:** Switch traffic between two environments
+- ✅ **Zero-Downtime Rollouts:** Promote new version after testing
+- ✅ **Rollback Support:** Easily revert to previous environment
+- ✅ **Free-Tier Friendly:** Uses AWS Free Tier services only
+
+---
+
+## Project Structure
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # GitHub Actions CI/CD workflow
+├── app/
+│   ├── app.py                  # Sample Flask app
+│   └── requirements.txt
+├── terraform/
+│   ├── main.tf                 # EC2 + blue-green logic
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── user_data.sh            # EC2 setup script
+├── README.md
+
+---
+
+## Blue-Green Deployment Workflow
+1. Code is pushed to the `main` branch
+2. GitHub Actions triggers the CI/CD pipeline
+3. Terraform provisions or updates the **inactive** environment (either Blue or Green)
+4. Once deployed and verified, traffic is **switched** to the updated environment
+5. If issues arise, rollback is as simple as switching back
