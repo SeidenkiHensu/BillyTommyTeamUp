@@ -177,9 +177,10 @@ resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.app_lb.arn
   port              = 80
   protocol          = "HTTP"
+  
   default_action {
-  type             = "forward"
-  target_group_arn = var.active_env == "blue" ? aws_lb_target_group.blue_tg.arn : aws_lb_target_group.green_tg.arn
+    type             = "forward"
+    target_group_arn = var.active_env == "blue" ? aws_lb_target_group.blue_tg.arn : aws_lb_target_group.green_tg.arn
   }
 
 # This is optional but makes sure the listener doesn't forward to a group before it's ready
