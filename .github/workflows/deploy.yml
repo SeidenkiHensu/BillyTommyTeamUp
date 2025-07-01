@@ -34,6 +34,3 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
-
-      # Add steps here to run integration tests on the inactive environment
-      # and switch the active_env variable to promote the new version live
