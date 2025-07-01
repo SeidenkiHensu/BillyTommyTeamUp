@@ -1,5 +1,5 @@
 # Project Goal Overview
-This README is for a walkthrough for a deployments with minimal downtime and fast rollback capability. This repo and demostration will take you on how a deployment goes from Github, utilizing Github Actions, AWS Services, and monitoring. 
+This README is a walkthrough for a deployment with minimal downtime and fast rollback capability. This repo and demostration will take you on how a deployment goes from Github, utilizing Github Actions, AWS Services, and finally monitoring. 
 
 Within this repository, I will automate application deployments using infrastructure as code and a blue-green deployment strategy practice. This includes provisioning, deploying, switching traffic, and rolling back all while using free-tier AWS services.
 
@@ -45,52 +45,14 @@ This project demonstrates a fully automated CI/CD pipeline for zero-downtime dep
 
 Checkout [this article](https://www.terraform.io/intro/index.html) for more information Terraform and it's many uses.
 
-## Provisioning IAM Users for EC2 Management
-You can provision new AWS IAM users who will have full access to manage the EC2 instances created by this project. To add users:
+## AWS Services
+This project uses AWS EC2 for hosting the application environments, IAM for secure access, and Cloud-Init for auto-configuration at boot.
 
-1. Edit the `user_name` variable in `iam-user.tf` or provide it via a `terraform.tfvars` file, e.g.:
-   ```hcl
-   user_name = ["alice"]
-   ```
-2. Run `terraform apply` to create the users and generate their access keys.
-3. The output will include the access key and secret for each user (sensitive output).
-4. Each user will have the `AmazonEC2FullAccess` policy attached, allowing them to manage EC2 resources in your AWS account.
+### EC2
+EC2 is used for hosting the application environments. Each environment is an EC2 instance, and the load balancer distributes traffic between them.
 
-You can add or remove users by updating the `user_name` list and reapplying Terraform.
+### IAM
+IAM is used for secure access to AWS resources. The IAM users are provisioned by Terraform and have the necessary permissions to manage EC2 resources.
 
-
-
----
-
-## Key Features
-- ✅ **CI/CD Workflow:** Triggered by GitHub push to `main` branch
-- ✅ **Terraform-Based Provisioning:** EC2, IAM, Security Groups
-- ✅ **Blue-Green Deployment:** Switch traffic between two environments
-- ✅ **Zero-Downtime Rollouts:** Promote new version after testing
-- ✅ **Rollback Support:** Easily revert to previous environment
-- ✅ **Free-Tier Friendly:** Uses AWS Free Tier services only
-
----
-
-## Project Structure
-├── .github/
-│   └── workflows/
-│       └── deploy.yml          # GitHub Actions CI/CD workflow
-├── app/
-│   ├── app.py                  # Sample Flask app
-│   └── requirements.txt
-├── terraform/
-│   ├── main.tf                 # EC2 + blue-green logic
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── user_data.sh            # EC2 setup script
-├── README.md
-
----
-
-## Blue-Green Deployment Workflow
-1. Code is pushed to the `main` branch
-2. GitHub Actions triggers the CI/CD pipeline
-3. Terraform provisions or updates the **inactive** environment (either Blue or Green)
-4. Once deployed and verified, traffic is **switched** to the updated environment
-5. If issues arise, rollback is as simple as switching back
+### Cloud-Init
+Cloud-Init is used for auto-configuration at boot. It allows you to run custom scripts and packages during the instance initialization process. 
