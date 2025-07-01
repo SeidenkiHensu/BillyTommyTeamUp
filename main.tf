@@ -11,6 +11,33 @@ resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 }
 
+# Setting up an Internet Gateway
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+}
+
+# Setting up a Public Route Table
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+}
+
+# Setting up a Public Route Table Association for Subnet A
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.subnet_a.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+# Setting up a Public Route Table Association for Subnet B
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.subnet_b.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
 # Setting up Subnets for Blue Stack
 resource "aws_subnet" "subnet_a" {
   vpc_id            = aws_vpc.main.id
@@ -105,12 +132,18 @@ resource "aws_lb" "app_lb" {
   }
 }
 
+# Setting up a random ID for the Load Balancer so that they have unique names
+resource "random_id" "suffix" {
+  byte_length = 4
+}
+
 # Setting up a target group for the Application Load Balancer
 resource "aws_lb_target_group" "blue_tg" {
-  name     = "blue-tg"
+  name     = "blue-tg-${random_id.suffix.hex}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
+
   health_check {
     path                = "/"
     protocol            = "HTTP"
@@ -123,10 +156,11 @@ resource "aws_lb_target_group" "blue_tg" {
 }
 
 resource "aws_lb_target_group" "green_tg" {
-  name     = "green-tg"
+  name     = "green-tg-${random_id.suffix.hex}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
+
   health_check {
     path                = "/"
     protocol            = "HTTP"
@@ -144,8 +178,8 @@ resource "aws_lb_listener" "http" {
   port              = 80
   protocol          = "HTTP"
   default_action {
-    type             = "forward"
-    target_group_arn = var.active_env == "blue" ? aws_lb_target_group.blue_tg.arn : aws_lb_target_group.green_tg.arn
+  type             = "forward"
+  target_group_arn = var.active_env == "blue" ? aws_lb_target_group.blue_tg.arn : aws_lb_target_group.green_tg.arn
   }
 
 # This is optional but makes sure the listener doesn't forward to a group before it's ready
