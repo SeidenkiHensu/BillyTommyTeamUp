@@ -17,5 +17,5 @@ variable "active_env" {
 
 variable "user_name" {
   description = "The name of the IAM user to create."
-  type        = string
+  type        = list(string)
 }
