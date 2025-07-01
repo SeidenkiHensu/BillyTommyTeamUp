@@ -1,14 +1,17 @@
+# Setting up an output so we can see the load balancer DNS name
 output "load_balancer_dns" {
   description = "The DNS name of the application load balancer."
   value       = aws_lb.app_lb.dns_name
 }
 
+# Changed the value output to display the IP addresses
 output "blue_instance_public_ip" {
   description = "Public IP of the blue environment EC2 instance."
-  value       = aws_instance.blue.public_ip
+  value       = [for instance in aws_instance.blue : instance.public_ip]
 }
 
+# Changed the value output to display the IP addresses
 output "green_instance_public_ip" {
   description = "Public IP of the green environment EC2 instance."
-  value       = aws_instance.green.public_ip
+  value       = [for instance in aws_instance.green : instance.public_ip]
 }
