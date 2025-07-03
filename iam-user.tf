@@ -14,20 +14,6 @@ resource "aws_iam_user" "project_users" {
   }
 }
 
-
-/*# Setting up IAM User Policy Attachments. This will attach the AmazonEC2FullAccess policy to the user
-resource "aws_iam_user_policy_attachment" "ec2_full_access" {
-  count      = length(var.user_name)
-  user       = aws_iam_user.project_users[count.index].name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
-}
-
-# Setting up IAM Access Keys
-resource "aws_iam_access_key" "user_keys" {
-  count = length(var.user_name)
-  user  = aws_iam_user.project_users[count.index].name
-}*/
-
 # Setting up IAM User Policy Attachments. This will attach the AmazonEC2FullAccess policy to the user
 resource "aws_iam_user_policy_attachment" "ec2_full_access" {
   for_each = aws_iam_user.project_users
@@ -53,15 +39,3 @@ output "iam_user_access_keys" {
   }
   sensitive = true
 }
-
-/*output "iam_user_access_keys" {
-  description = "Access keys for provisioned IAM users."
-  value = {
-    for name, user in aws_iam_access_key.user_keys :
-    name => {
-      access_key_id     = user.id
-      secret_access_key = user.secret
-    }
-  }
-  sensitive = true
-}*/

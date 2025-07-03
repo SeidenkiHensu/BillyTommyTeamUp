@@ -84,7 +84,7 @@ resource "aws_security_group" "ec2_sg" {
 }
 
 # For this demo, I'm using 3 instances each, which goes against free tier outside of this demo
-# Normally you'll use the count variable instead of setting a static number
+# Normally you'll use a variable instead of setting a static number
 resource "aws_instance" "blue" {
   count         = 3
   ami           = var.ami_id
@@ -140,7 +140,7 @@ resource "random_id" "suffix" {
 
 # Setting up a target group for the Application Load Balancer
 resource "aws_lb_target_group" "blue_tg" {
-  name     = "blue-tg-${random_id.suffix.hex}"
+  name     = "blue-morpher-${random_id.suffix.hex}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -157,7 +157,7 @@ resource "aws_lb_target_group" "blue_tg" {
 }
 
 resource "aws_lb_target_group" "green_tg" {
-  name     = "green-tg-${random_id.suffix.hex}"
+  name     = "green-morpher-${random_id.suffix.hex}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -180,7 +180,8 @@ resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.app_lb[0].arn
   port              = 80
   protocol          = "HTTP"
-  
+
+  # This sets the default stack to be looked at
   default_action {
     type             = "forward"
     target_group_arn = var.active_env == "blue" ? aws_lb_target_group.blue_tg.arn : aws_lb_target_group.green_tg.arn
@@ -209,13 +210,15 @@ resource "aws_lb_target_group_attachment" "green_attach" {
   port             = 80
 }
 
+# Setting up a CloudWatch Log Group for EC2 Instance Logs
 resource "aws_cloudwatch_log_group" "ec2_log_group" {
   name = "/ec2/instance/logs-${random_id.suffix.hex}"
   retention_in_days = 14
 }
 
+# Setting up a CloudWatch Dashboard for EC2 Instance Monitoring
 resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
-  dashboard_name = "ec2-monitoring-dashboard"
+  dashboard_name = "power-ranger-morphing-grid"
   dashboard_body = jsonencode({
     widgets = [
       {
@@ -243,6 +246,7 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
   })
 }
 
+# Setting up a CloudWatch Log Stream for EC2 Instance Logs
 resource "aws_cloudwatch_log_stream" "ec2_log_stream" {
   name           = "ec2-instance-stream"
   log_group_name = aws_cloudwatch_log_group.ec2_log_group.name
