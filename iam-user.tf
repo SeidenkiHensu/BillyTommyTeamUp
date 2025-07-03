@@ -6,7 +6,7 @@ resource "aws_iam_user" "project_users" {
   # Prevent user from being deleted and ignore changes if the user already exists
   lifecycle {
     prevent_destroy = false
-    ignore_changes  = ["Alice"]
+    ignore_changes  = ["name"]
   }
 }
 
