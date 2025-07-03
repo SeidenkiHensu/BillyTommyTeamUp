@@ -119,7 +119,7 @@ resource "aws_instance" "green" {
 
 # Setting up an Application Load Balancer
 resource "aws_lb" "app_lb" {
-  name               = "command-ecnter"
+  name               = "command-center"
   internal           = false
   load_balancer_type = "application"
   subnets            = [aws_subnet.subnet_a.id, aws_subnet.subnet_b.id]
