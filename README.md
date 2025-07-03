@@ -65,7 +65,7 @@ EC2 is used for hosting the application environments. Each environment is an EC2
 ### IAM
 IAM is used for secure access to AWS resources. The IAM users are provisioned by Terraform and have the necessary permissions to manage EC2 resources.
 
-### Cloudwatch - Dashboard and Log Groups
+### Cloudwatch
 CloudWatch is used for monitoring dashboards and logging for the EC2 instances, load balancers, and other AWS resources. With CloudWatch, an alarm could trigger a rollback if the application health check fails.
 
 ### VPC
