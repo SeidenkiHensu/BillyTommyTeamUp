@@ -207,7 +207,7 @@ resource "aws_lb_target_group_attachment" "green_attach" {
 }
 
 resource "aws_cloudwatch_log_group" "ec2_log_group" {
-  name              = "/ec2/instance/logs"
+  name = "/ec2/instance/logs-${random_id.suffix.hex}"
   retention_in_days = 14
 }
 
