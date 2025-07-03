@@ -119,6 +119,7 @@ resource "aws_instance" "green" {
 
 # Setting up an Application Load Balancer
 resource "aws_lb" "app_lb" {
+  count              = var.create_alb ? 1 : 0
   name               = "command-center"
   internal           = false
   load_balancer_type = "application"
@@ -174,7 +175,8 @@ resource "aws_lb_target_group" "green_tg" {
 
 # Setting up a Listener for the Load Balancer
 resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.app_lb.arn
+#  load_balancer_arn = aws_lb.app_lb.arn
+  load_balancer_arn = aws_lb.app_lb[0].arn
   port              = 80
   protocol          = "HTTP"
   
