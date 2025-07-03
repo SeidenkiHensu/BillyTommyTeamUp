@@ -6,7 +6,7 @@ resource "aws_iam_user" "project_users" {
   # Prevent user from being deleted and ignore changes if the user already exists
   lifecycle {
     prevent_destroy = false
-    ignore_changes  = [name]
+    ignore_changes  = ["Alice"]
   }
 }
 
@@ -23,7 +23,7 @@ resource "aws_iam_access_key" "user_keys" {
   user  = aws_iam_user.project_users[count.index].name
 }
 
-# Setting up IAM Access Key Outputs
+# Setting up IAM Access Key Outputs. This is just for demo purposes. In a real world scenario, we would be using secrets manager to store the access keys.
 output "iam_user_access_keys" {
   description = "Access keys for provisioned IAM users."
   value = {
