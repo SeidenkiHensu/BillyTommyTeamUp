@@ -14,6 +14,7 @@ resource "aws_iam_user" "project_users" {
   }
 }
 
+
 /*# Setting up IAM User Policy Attachments. This will attach the AmazonEC2FullAccess policy to the user
 resource "aws_iam_user_policy_attachment" "ec2_full_access" {
   count      = length(var.user_name)
