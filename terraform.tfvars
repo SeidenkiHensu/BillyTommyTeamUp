@@ -3,14 +3,15 @@ region = "us-east-1"
 ami_id = "ami-0c02fb55956c7d316"
 active_env = "blue"
 create_alb = true
-#user_name = ["Zordon", "Alpha", "Jason", "Kimberly", "Trini", "Zack"]
 # Blank when we're not creating new users
-user_name = [] 
-existing_users =[ 
+#user_name = [] 
+user_name = ["Zordon", "Alpha", "Jason", "Kimberly", "Trini", "Zack"]
+existing_users = ["xfsUser"]
+/*existing_users = [ 
     "Zordon", 
     "Alpha", 
     "Jason", 
     "Kimberly", 
     "Trini", 
     "Zack" 
-    ]
+    ]*/
