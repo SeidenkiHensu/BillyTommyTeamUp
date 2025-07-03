@@ -23,3 +23,9 @@ variable "user_name" {
   description = "The name of the IAM user to create."
   type        = list(string)
 }
+
+variable "existing_users" {
+  description = "List of IAM users that already exist in AWS"
+  type        = list(string)
+  default     = []
+}
