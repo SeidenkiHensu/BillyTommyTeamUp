@@ -57,7 +57,7 @@ For a more polished demo, I would also setup Modules so it could be more spread 
 Checkout [this article](https://www.terraform.io/intro/index.html) for more information Terraform and it's many uses.
 
 ## AWS Services
-This project uses AWS EC2, IAM, Security Groups, and CloudWatch for monitoring.
+This project uses AWS services EC2 establishing Instances, Security Groups, Network Interface, Load Balancer, Target Groups. For IAM, Users will be established. CloudWatch will have a dashboard and Log Groups for monitoring. VPC's will be established
 
 ### EC2
 EC2 is used for hosting the application environments. Each environment is an EC2 instance, and the load balancer distributes traffic between them.
@@ -68,5 +68,5 @@ IAM is used for secure access to AWS resources. The IAM users are provisioned by
 ### Cloudwatch
 CloudWatch is used for monitoring dashboards and logging for the EC2 instances, load balancers, and other AWS resources. With CloudWatch, an alarm could trigger a rollback if the application health check fails.
 
-### Load Balancer
-The load balancer distributes traffic between the blue and green environments. It ensures that users are directed to the active environment and that the inactive environment is only accessible during a rollback.
+### VPC
+The Virtual Private Cloud (VPC) is where the AWS resources are launched. It provides a logically isolated section within the AWS cloud where you can launch resources in a custom network.
