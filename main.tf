@@ -119,7 +119,7 @@ resource "aws_instance" "green" {
 
 # Setting up an Application Load Balancer
 resource "aws_lb" "app_lb" {
-  name               = "Command Center"
+  name               = "command-ecnter"
   internal           = false
   load_balancer_type = "application"
   subnets            = [aws_subnet.subnet_a.id, aws_subnet.subnet_b.id]
@@ -223,7 +223,12 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
         height = 6,
         properties = {
           metrics = [
-            [ "AWS/EC2", "CPUUtilization", "InstanceId", "${aws_instance.ec2.id}" ]
+            [ "AWS/EC2", "CPUUtilization", "InstanceId", "${aws_instance.blue[0].id}" ],
+            [ ".", "CPUUtilization", "InstanceId", "${aws_instance.blue[1].id}" ],
+            [ ".", "CPUUtilization", "InstanceId", "${aws_instance.blue[2].id}" ],
+            [ "AWS/EC2", "CPUUtilization", "InstanceId", "${aws_instance.green[0].id}" ],
+            [ ".", "CPUUtilization", "InstanceId", "${aws_instance.green[1].id}" ],
+            [ ".", "CPUUtilization", "InstanceId", "${aws_instance.green[2].id}" ],
           ],
           period = 300,
           stat   = "Average",
