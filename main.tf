@@ -175,6 +175,7 @@ resource "aws_lb_target_group" "green_tg" {
 
 # Setting up a Listener for the Load Balancer
 resource "aws_lb_listener" "http" {
+  count             = var.create_alb ? 1 : 0
 #  load_balancer_arn = aws_lb.app_lb.arn
   load_balancer_arn = aws_lb.app_lb[0].arn
   port              = 80
