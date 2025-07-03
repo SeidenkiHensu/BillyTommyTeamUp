@@ -232,7 +232,7 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
           ],
           period = 300,
           stat   = "Average",
-          region = var.aws_region,
+          region = var.region,
           title  = "EC2 CPU Utilization"
         }
       }
