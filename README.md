@@ -10,8 +10,7 @@ Within this repository, I will automate application deployments using infrastruc
 - ✅ **Zero-Downtime Rollouts:** Promote new version after testing
 - ✅ **Rollback Support:** Easily revert to previous environment
 - ✅ **Free-Tier Friendly:** Uses AWS Free Tier services only to host the application environments
-- ✅ **Flask (Python):** Lightweight web application
-- ✅ **Cloud-Init:** Auto-configure EC2 instances at boot
+- ✅ **CloudWatch:** Dashboard monitoring and logging
 
 ## Tech Stack
 | Tool             | Purpose                                 |
@@ -20,13 +19,19 @@ Within this repository, I will automate application deployments using infrastruc
 | Terraform        | Infrastructure as Code (IaC)            |
 | AWS EC2 (Free Tier) | Host the application environments       |
 | IAM              | Secure AWS access via Terraform         |
-| Flask (Python)   | Lightweight web application              |
-| Cloud-Init       | Auto-configure EC2 instances at boot    |
 | CloudWatch       | Monitoring and logging                  |
 | Load Balancer    | Distribute traffic between environments |
 
 ## Github Actions
 This project uses GitHub Actions for CI/CD automation. The workflow is triggered on every push to the `main` branch.
+
+### Github Actions Workflow
+The workflow is defined in `.github/workflows/deploy.yml`. It performs the following steps:
+1. Checks out the repository
+2. Sets up Terraform
+3. Initializes Terraform backend
+4. Plans Terraform changes
+5. Applies Terraform changes
 
 ## Terraform
 This project demonstrates a fully automated CI/CD pipeline for zero-downtime deployments using a blue-green deployment strategy on AWS EC2, managed by Terraform and triggered by GitHub Actions. Terraform is a form of IaC that allows you to build, change, and version infrastructure safely and efficiently.
@@ -52,16 +57,13 @@ For a more polished demo, I would also setup Modules so it could be more spread 
 Checkout [this article](https://www.terraform.io/intro/index.html) for more information Terraform and it's many uses.
 
 ## AWS Services
-This project uses AWS EC2, IAM, Security Groups, and Cloud-Init for auto-configuration at boot.
+This project uses AWS EC2, IAM, Security Groups, and CloudWatch for monitoring.
 
 ### EC2
 EC2 is used for hosting the application environments. Each environment is an EC2 instance, and the load balancer distributes traffic between them.
 
 ### IAM
 IAM is used for secure access to AWS resources. The IAM users are provisioned by Terraform and have the necessary permissions to manage EC2 resources.
-
-### Cloud-Init
-Cloud-Init is used for auto-configuration at boot. It allows you to run custom scripts and packages during the instance initialization process. 
 
 ### Cloudwatch
 CloudWatch is used for monitoring dashboards and logging for the EC2 instances, load balancers, and other AWS resources. With CloudWatch, an alarm could trigger a rollback if the application health check fails.
