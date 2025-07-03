@@ -1,7 +1,8 @@
 # Creating up IAM Users
 resource "aws_iam_user" "project_users" {
   for_each = {
-    for name in var.user_name : name => name if !(name in var.existing_users)
+    for name in var.user_name : name => name 
+    if !contains(var.existing_users, name)
   }
   
   name = each.value
