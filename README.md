@@ -23,6 +23,7 @@ Within this repository, I will automate application deployments using infrastruc
 | Flask (Python)   | Lightweight web application              |
 | Cloud-Init       | Auto-configure EC2 instances at boot    |
 | CloudWatch       | Monitoring and logging                  |
+| Load Balancer    | Distribute traffic between environments |
 
 ## Github Actions
 This project uses GitHub Actions for CI/CD automation. The workflow is triggered on every push to the `main` branch.
@@ -64,3 +65,6 @@ Cloud-Init is used for auto-configuration at boot. It allows you to run custom s
 
 ### Cloudwatch
 CloudWatch is used for monitoring dashboards and logging for the EC2 instances, load balancers, and other AWS resources. With CloudWatch, an alarm could trigger a rollback if the application health check fails.
+
+### Load Balancer
+The load balancer distributes traffic between the blue and green environments. It ensures that users are directed to the active environment and that the inactive environment is only accessible during a rollback.
