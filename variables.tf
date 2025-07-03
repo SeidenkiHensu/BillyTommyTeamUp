@@ -29,3 +29,9 @@ variable "existing_users" {
   type        = list(string)
   default     = []
 }
+
+variable "create_alb" {
+  description = "Whether to create a new ALB"
+  type        = bool
+  default     = true
+}
