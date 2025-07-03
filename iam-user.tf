@@ -1,4 +1,4 @@
-# Setting up IAM Users
+/*# Creating up IAM Users
 resource "aws_iam_user" "project_users" {
   count = length(var.user_name)
   name  = var.user_name[count.index]
@@ -8,7 +8,38 @@ resource "aws_iam_user" "project_users" {
     prevent_destroy = false
     ignore_changes  = [name]
   }
+}*/
+
+# Creating up IAM Users
+resource "aws_iam_user" "project_users" {
+  for_each = toset(var.user_name)
+  name     = each.value
+
+  # Prevent user from being deleted and ignore changes if the user already exists
+  lifecycle {
+    prevent_destroy = false
+    ignore_changes  = [name]
+  }
+  
 }
+
+/*# Creating up IAM Users
+resource "aws_iam_user" "project_users" {
+  count = length(var.user_name)
+  name  = var.user_name[count.index]
+
+  # Prevent user from being deleted and ignore changes if the user already exists
+  lifecycle {
+    prevent_destroy = false
+    ignore_changes  = [name]
+  }
+
+  # Only create if the user doesn't exist
+  for_each = {
+    for idx, name in var.user_name :
+    idx => name if !(name in var.existing_users)
+  }
+}*/
 
 # Setting up IAM User Policy Attachments. This will attach the AmazonEC2FullAccess policy to the user
 resource "aws_iam_user_policy_attachment" "ec2_full_access" {
