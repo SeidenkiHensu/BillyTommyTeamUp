@@ -54,7 +54,7 @@ resource "aws_subnet" "subnet_b" {
 
 # Setting up a Security Group for EC2 Instances
 resource "aws_security_group" "ec2_sg" {
-  name        = "ec2_sg"
+  name        = "Angel Grove"
   description = "Allow HTTP and SSH"
   vpc_id      = aws_vpc.main.id
 
@@ -119,14 +119,14 @@ resource "aws_instance" "green" {
 
 # Setting up an Application Load Balancer
 resource "aws_lb" "app_lb" {
-  name               = "app-lb"
+  name               = "Command Center"
   internal           = false
   load_balancer_type = "application"
   subnets            = [aws_subnet.subnet_a.id, aws_subnet.subnet_b.id]
   security_groups    = [aws_security_group.ec2_sg.id]
 
   tags = {
-    Name        = "app-lb"
+    Name        = "Command Center"
     Environment = var.active_env
     Project     = "BillyTommyTeamUp"
   }
@@ -204,4 +204,38 @@ resource "aws_lb_target_group_attachment" "green_attach" {
   target_group_arn = aws_lb_target_group.green_tg.arn
   target_id        = aws_instance.green[count.index].id
   port             = 80
+}
+
+resource "aws_cloudwatch_log_group" "ec2_log_group" {
+  name              = "/ec2/instance/logs"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
+  dashboard_name = "ec2-monitoring-dashboard"
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type = "metric",
+        x    = 0,
+        y    = 0,
+        width = 24,
+        height = 6,
+        properties = {
+          metrics = [
+            [ "AWS/EC2", "CPUUtilization", "InstanceId", "${aws_instance.ec2.id}" ]
+          ],
+          period = 300,
+          stat   = "Average",
+          region = var.aws_region,
+          title  = "EC2 CPU Utilization"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_cloudwatch_log_stream" "ec2_log_stream" {
+  name           = "ec2-instance-stream"
+  log_group_name = aws_cloudwatch_log_group.ec2_log_group.name
 }
