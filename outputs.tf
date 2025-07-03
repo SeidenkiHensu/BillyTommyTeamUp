@@ -1,7 +1,9 @@
 # Setting up an output so we can see the load balancer DNS name
 output "load_balancer_dns" {
   description = "The DNS name of the application load balancer."
-  value       = aws_lb.app_lb.dns_name
+#  value       = aws_lb.app_lb.dns_name
+#  value       = aws_lb.app_lb[0].dns_name
+  value       = length(aws_lb.app_lb) > 0 ? aws_lb.app_lb[0].dns_name : ""
 }
 
 # Changed the value output to display the IP addresses
