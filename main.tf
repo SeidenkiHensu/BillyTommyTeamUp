@@ -248,6 +248,7 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
 
 # Setting up a CloudWatch Log Stream for EC2 Instance Logs
 resource "aws_cloudwatch_log_stream" "ec2_log_stream" {
+  count          = var.create_ec2_instances ? 1 : 0 
   name           = "ec2-instance-stream"
   log_group_name = aws_cloudwatch_log_group.ec2_log_group.name
 }
