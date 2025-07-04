@@ -95,6 +95,7 @@ resource "aws_instance" "blue" {
   tags = {
     Name        = "Billy-${count.index + 1}"
     Env         = "blue"
+#    EnvironmentStatus = var.active_env == "blue" ? "live" : "standby"
     InstanceNum = "${count.index + 1}"
     Project     = "BillyTommyTeamUp"
   }
@@ -110,6 +111,7 @@ resource "aws_instance" "green" {
   tags = {
     Name        = "Tommy-${count.index + 1}"
     Env         = "green"
+#    EnvironmentStatus = var.active_env == "green" ? "live" : "standby"
     InstanceNum = "${count.index + 1}"
     Project     = "BillyTommyTeamUp"
   }
@@ -173,9 +175,7 @@ resource "aws_lb_target_group" "green_tg" {
 
 # Setting up a Listener for the Load Balancer
 resource "aws_lb_listener" "http" {
-#  count             = var.create_alb ? 1 : 0
   load_balancer_arn = aws_lb.app_lb.arn
-#  load_balancer_arn = aws_lb.app_lb[0].arn
   port              = 80
   protocol          = "HTTP"
 
