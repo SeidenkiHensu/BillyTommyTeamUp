@@ -210,7 +210,8 @@ resource "aws_lb_target_group_attachment" "green_attach" {
 
 # Setting up a CloudWatch Log Group for EC2 Instance Logs
 resource "aws_cloudwatch_log_group" "ec2_log_group" {
-  name = "/ec2/instance/logs-${random_id.suffix.hex}"
+  count            = var.create_ec2_instances ? 1 : 0
+  name             = "/ec2/instance/logs-${random_id.suffix.hex}"
   retention_in_days = 14
 }
 
