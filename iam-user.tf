@@ -1,4 +1,4 @@
-# Creating up IAM Users
+# Creating IAM Users
 resource "aws_iam_user" "project_users" {
   for_each = {
     for name in var.user_name : name => name 
@@ -7,7 +7,7 @@ resource "aws_iam_user" "project_users" {
   
   name = each.value
 
-  # Prevent user from being deleted and ignore changes if the user already exists
+  # Prevents user from being deleted and ignoring changes if the user already exists
   lifecycle {
     prevent_destroy = false
     ignore_changes  = [name]
