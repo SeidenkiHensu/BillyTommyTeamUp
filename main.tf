@@ -194,7 +194,7 @@ resource "aws_lb_listener" "http" {
 
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
 resource "aws_lb_target_group_attachment" "blue_attach" {
-  count            = 3
+  count            = var.create_ec2_instances ? 3 : 0
   target_group_arn = aws_lb_target_group.blue_tg.arn
   target_id        = aws_instance.blue[count.index].id
   port             = 80
@@ -202,7 +202,7 @@ resource "aws_lb_target_group_attachment" "blue_attach" {
 
 # Setting up a Target Group Attachment for the Load Balancer to the Green Instances
 resource "aws_lb_target_group_attachment" "green_attach" {
-  count            = 3
+  count            = var.create_ec2_instances ? 3 : 0
   target_group_arn = aws_lb_target_group.green_tg.arn
   target_id        = aws_instance.green[count.index].id
   port             = 80
@@ -216,6 +216,7 @@ resource "aws_cloudwatch_log_group" "ec2_log_group" {
 
 # Setting up a CloudWatch Dashboard for EC2 Instance Monitoring. Only setting up CPU usage for the demo
 resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
+  count          = var.create_ec2_instances ? 1 : 0
   dashboard_name = "power-ranger-morphing-grid"
   dashboard_body = jsonencode({
     widgets = [
