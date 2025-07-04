@@ -6,17 +6,17 @@ provider "aws" {
   region = var.region
 }
 
-# Setting up a VPC
+# Sets up a VPC
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
 }
 
-# Setting up an Internet Gateway
+# Sets up an Internet Gateway
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 }
 
-# Setting up a Public Route Table
+# Sets up a Public Route Table
 resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.main.id
 
@@ -52,13 +52,13 @@ resource "aws_subnet" "subnet_b" {
   availability_zone = "us-east-1b"
 }
 
-# Setting up a Security Group for EC2 Instances
+# Creating a Security Group for the EC2 Instances
 resource "aws_security_group" "ec2_sg" {
   name        = "Angel Grove"
   description = "Allow HTTP and SSH"
   vpc_id      = aws_vpc.main.id
 
-  # Allow HTTP traffic from the internet
+  # Allows HTTP traffic from the internet
   ingress {
     from_port   = 80
     to_port     = 80
@@ -66,7 +66,7 @@ resource "aws_security_group" "ec2_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow SSH traffic from the internet
+  # Allows SSH traffic from the internet
   ingress {
     from_port   = 22
     to_port     = 22
@@ -74,7 +74,7 @@ resource "aws_security_group" "ec2_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Allow all outbound traffic
+  # Allows all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
@@ -83,10 +83,9 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
-# For this demo, I'm using 3 instances each, which goes against free tier outside of this demo
-# Normally you'll use a variable instead of setting a static number
+# For this demo, I'm creating 3 instances for each stack, which goes against the free tier outside of this demo if using for long periods of time.
 resource "aws_instance" "blue" {
-  count         = 3
+  count         = var.create_ec2_instances ? 3 : 0
   ami           = var.ami_id
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.subnet_a.id
@@ -102,13 +101,12 @@ resource "aws_instance" "blue" {
 }
 
 resource "aws_instance" "green" {
-  count         = 3
+  count         = var.create_ec2_instances ? 3 : 0
   ami           = var.ami_id
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.subnet_b.id
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
-# Adding tags to help during audit purposes like cost awareness
   tags = {
     Name        = "Tommy-${count.index + 1}"
     Env         = "green"
@@ -117,7 +115,7 @@ resource "aws_instance" "green" {
   }
 }
 
-# Setting up an Application Load Balancer
+# Creating the Application Load Balancer
 resource "aws_lb" "app_lb" {
   count              = var.create_alb ? 1 : 0
   name               = "command-center"
@@ -138,7 +136,7 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
-# Setting up a target group for the Application Load Balancer
+# Creating the target groups for the Application Load Balancer
 resource "aws_lb_target_group" "blue_tg" {
   name     = "blue-morpher-${random_id.suffix.hex}"
   port     = 80
@@ -194,7 +192,7 @@ resource "aws_lb_listener" "http" {
   ]
 }
 
-# Setting up a Target Group Attachment for the Load Balancer to the Blue Instances
+# Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
 resource "aws_lb_target_group_attachment" "blue_attach" {
   count            = 3
   target_group_arn = aws_lb_target_group.blue_tg.arn
@@ -216,7 +214,7 @@ resource "aws_cloudwatch_log_group" "ec2_log_group" {
   retention_in_days = 14
 }
 
-# Setting up a CloudWatch Dashboard for EC2 Instance Monitoring
+# Setting up a CloudWatch Dashboard for EC2 Instance Monitoring. Only setting up CPU usage for the demo
 resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
   dashboard_name = "power-ranger-morphing-grid"
   dashboard_body = jsonencode({
