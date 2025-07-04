@@ -1,7 +1,12 @@
 # Sets up an output so we can see the load balancer DNS name
-output "load_balancer_dns" {
+/*output "load_balancer_dns" {
   description = "The DNS name of the application load balancer."
   value       = length(aws_lb.app_lb) > 0 ? aws_lb.app_lb[0].dns_name : ""
+}*/
+
+output "load_balancer_dns" {
+  description = "The DNS name of the application load balancer."
+  value       = var.create_alb ? aws_lb.app_lb.dns_name : ""
 }
 
 # Sets up an output for the CloudWatch dashboard name
