@@ -233,7 +233,7 @@ data "aws_lb_listener" "http" {
   count             = var.manage_alb ? 0 : 1
   load_balancer_arn = local.alb_arn
   port              = 80
-  protocol          = "HTTP"
+#  protocol          = "HTTP"
 }
 
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
