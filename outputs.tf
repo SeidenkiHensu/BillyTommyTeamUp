@@ -14,7 +14,8 @@ output "cloudwatch_dashboard_name" {
 # Sets up an output for the CloudWatch log group name
 output "cloudwatch_log_group_name" {
   description = "The name of the CloudWatch log group for EC2 logs."
-  value       = var.create_ec2_instances ? aws_cloudwatch_log_group.ec2_log_group[0].name : ""
+  value       = var.create_ec2_instances ? "/ec2/instance/logs-${var.active_env}" : ""
+  #value       = var.create_ec2_instances ? aws_cloudwatch_log_group.ec2_log_group[0].name : ""
 }
 
 output "active_stack" {
