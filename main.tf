@@ -179,6 +179,7 @@ resource "aws_lb_target_group" "blue_tg" {
 data "aws_lb_target_group" "blue_tg" {
   count = var.manage_alb ? 0 : 1
   name  = "blue-morpher"
+  vpc_id = aws_vpc.main.id
 }
 
 resource "aws_lb_target_group" "green_tg" {
@@ -203,6 +204,7 @@ resource "aws_lb_target_group" "green_tg" {
 data "aws_lb_target_group" "green_tg" {
   count = var.manage_alb ? 0 : 1
   name  = "green-morpher"
+  vpc_id = aws_vpc.main.id
 }
 
 # Setting up a Listener for the Load Balancer
