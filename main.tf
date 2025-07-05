@@ -158,7 +158,7 @@ locals {
 
 # Creating the target groups for the Application Load Balancer
 resource "aws_lb_target_group" "blue_tg" {
-  count    = var.manage_alb ? 0 : 1
+  count    = var.manage_alb ? 1 : 0
   name     = "blue-morpher"
 #  name     = "blue-morpher-${random_id.suffix.hex}"
   port     = 80
@@ -183,7 +183,7 @@ data "aws_lb_target_group" "blue_tg" {
 }
 
 resource "aws_lb_target_group" "green_tg" {
-  count    = var.manage_alb ? 0 : 1
+  count    = var.manage_alb ? 1 : 0
   name     = "green-morpher"
 #  name     = "green-morpher-${random_id.suffix.hex}"
   port     = 80
