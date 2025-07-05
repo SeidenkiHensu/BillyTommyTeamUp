@@ -237,6 +237,66 @@ data "aws_lb_listener" "http" {
 #  protocol          = "HTTP"
 }
 
+# Data sources to find existing EC2 instances
+data "aws_instances" "blue_instances" {
+  count = var.create_ec2_instances ? 0 : 1
+  filter {
+    name   = "tag:Name"
+    values = ["Billy-*"]
+  }
+  filter {
+    name   = "instance-state-name"
+    values = ["running", "stopped"]
+  }
+}
+
+data "aws_instances" "green_instances" {
+  count = var.create_ec2_instances ? 0 : 1
+  filter {
+    name   = "tag:Name"
+    values = ["Tommy-*"]
+  }
+  filter {
+    name   = "instance-state-name"
+    values = ["running", "stopped"]
+  }
+}
+
+# Resource to manage tags for existing blue instances
+resource "aws_ec2_tag" "blue_instance_tags" {
+  count     = var.create_ec2_instances ? 0 : length(data.aws_instances.blue_instances[0].ids)
+  resource_id = data.aws_instances.blue_instances[0].ids[count.index]
+  key        = "EnvironmentStatus"
+  value      = var.active_env == "blue" ? "live" : "standby"
+}
+
+# Resource to manage tags for existing green instances
+resource "aws_ec2_tag" "green_instance_tags" {
+  count     = var.create_ec2_instances ? 0 : length(data.aws_instances.green_instances[0].ids)
+  resource_id = data.aws_instances.green_instances[0].ids[count.index]
+  key        = "EnvironmentStatus"
+  value      = var.active_env == "green" ? "live" : "standby"
+}
+
+# Resource to manage the existing ALB listener's default action for blue-green switching
+# This allows Terraform to switch target groups even when manage_alb = false
+resource "aws_lb_listener" "managed_listener" {
+  count             = var.manage_alb ? 0 : 1
+  load_balancer_arn = local.alb_arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = local.active_tg_arn
+  }
+
+  # This ensures we're managing the existing listener, not creating a new one
+  lifecycle {
+    ignore_changes = [load_balancer_arn, port, protocol]
+  }
+}
+
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
 resource "aws_lb_target_group_attachment" "blue_attach" {
   count            = var.create_ec2_instances ? 3 : 0
@@ -299,45 +359,4 @@ resource "aws_cloudwatch_log_stream" "ec2_log_stream" {
   count          = var.create_ec2_instances ? 1 : 0 
   name           = "ec2-instance-stream"
   log_group_name = aws_cloudwatch_log_group.ec2_log_group[0].name
-}
-
-# Data sources to find existing EC2 instances
-data "aws_instances" "blue_instances" {
-  count = var.create_ec2_instances ? 0 : 1
-  filter {
-    name   = "tag:Name"
-    values = ["Billy-*"]
-  }
-  filter {
-    name   = "instance-state-name"
-    values = ["running", "stopped"]
-  }
-}
-
-data "aws_instances" "green_instances" {
-  count = var.create_ec2_instances ? 0 : 1
-  filter {
-    name   = "tag:Name"
-    values = ["Tommy-*"]
-  }
-  filter {
-    name   = "instance-state-name"
-    values = ["running", "stopped"]
-  }
-}
-
-# Resource to manage tags for existing blue instances
-resource "aws_ec2_tag" "blue_instance_tags" {
-  count     = var.create_ec2_instances ? 0 : length(data.aws_instances.blue_instances[0].ids)
-  resource_id = data.aws_instances.blue_instances[0].ids[count.index]
-  key        = "EnvironmentStatus"
-  value      = var.active_env == "blue" ? "live" : "standby"
-}
-
-# Resource to manage tags for existing green instances
-resource "aws_ec2_tag" "green_instance_tags" {
-  count     = var.create_ec2_instances ? 0 : length(data.aws_instances.green_instances[0].ids)
-  resource_id = data.aws_instances.green_instances[0].ids[count.index]
-  key        = "EnvironmentStatus"
-  value      = var.active_env == "green" ? "live" : "standby"
 }
