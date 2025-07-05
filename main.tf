@@ -85,35 +85,35 @@ resource "aws_security_group" "ec2_sg" {
 
 # For this demo, I'm creating 3 instances for each stack, which goes against the free tier outside of this demo if using for long periods of time.
 resource "aws_instance" "blue" {
-  count         = var.create_ec2_instances ? 3 : 0
-  ami           = var.ami_id
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.subnet_a.id
+  count                  = var.create_ec2_instances ? 3 : 0
+  ami                    = var.ami_id
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.subnet_a.id
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
 # Adding tags to help during audit purposes like cost awareness
   tags = {
-    Name        = "Billy-${count.index + 1}"
-    Env         = "blue"
-#    EnvironmentStatus = var.active_env == "blue" ? "live" : "standby"
-    InstanceNum = "${count.index + 1}"
-    Project     = "BillyTommyTeamUp"
+    Name              = "Billy-${count.index + 1}"
+    Env               = "blue"
+    EnvironmentStatus = var.active_env == "blue" ? "live" : "standby"
+    InstanceNum       = "${count.index + 1}"
+    Project           = "BillyTommyTeamUp"
   }
 }
 
 resource "aws_instance" "green" {
-  count         = var.create_ec2_instances ? 3 : 0
-  ami           = var.ami_id
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.subnet_b.id
+  count                  = var.create_ec2_instances ? 3 : 0
+  ami                    = var.ami_id
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.subnet_b.id
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
   tags = {
-    Name        = "Tommy-${count.index + 1}"
-    Env         = "green"
-#    EnvironmentStatus = var.active_env == "green" ? "live" : "standby"
-    InstanceNum = "${count.index + 1}"
-    Project     = "BillyTommyTeamUp"
+    Name              = "Tommy-${count.index + 1}"
+    Env               = "green"
+    EnvironmentStatus = var.active_env == "green" ? "live" : "standby"
+    InstanceNum       = "${count.index + 1}"
+    Project           = "BillyTommyTeamUp"
   }
 }
 
@@ -215,7 +215,8 @@ resource "aws_lb_target_group_attachment" "green_attach" {
 # Setting up a CloudWatch Log Group for EC2 Instance Logs
 resource "aws_cloudwatch_log_group" "ec2_log_group" {
   count            = var.create_ec2_instances ? 1 : 0
-  name             = "/ec2/instance/logs-${random_id.suffix.hex}"
+  name             = "ec2/instance/logs-${var.active_env}"
+#  name             = "/ec2/instance/logs-${random_id.suffix.hex}"
   retention_in_days = 14
 }
 
@@ -226,11 +227,11 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
   dashboard_body = jsonencode({
     widgets = [
       {
-        type = "metric",
-        x    = 0,
-        y    = 0,
-        width = 24,
-        height = 6,
+        type       = "metric",
+        x          = 0,
+        y          = 0,
+        width      = 24,
+        height     = 6,
         properties = {
           metrics = [
             [ "AWS/EC2", "CPUUtilization", "InstanceId", "${aws_instance.blue[0].id}" ],
