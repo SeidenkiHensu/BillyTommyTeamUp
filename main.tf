@@ -209,6 +209,7 @@ data "aws_lb_target_group" "green_tg" {
 
 # Setting up a Listener for the Load Balancer
 resource "aws_lb_listener" "http" {
+  count             = var.manage_alb ? 1 : 0
   load_balancer_arn = local.alb_arn
   #load_balancer_arn = aws_lb.app_lb.arn
   port              = 80
@@ -226,6 +227,13 @@ resource "aws_lb_listener" "http" {
     aws_lb_target_group.blue_tg,
     aws_lb_target_group.green_tg
   ]
+}
+
+data "aws_lb_listener" "http" {
+  count             = var.manage_alb ? 0 : 1
+  load_balancer_arn = local.alb_arn
+  port              = 80
+  protocol          = "HTTP"
 }
 
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
