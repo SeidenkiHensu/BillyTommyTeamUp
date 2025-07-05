@@ -95,6 +95,7 @@ resource "aws_instance" "blue" {
   tags = {
     Name        = "Billy-${count.index + 1}"
     Env         = "blue"
+#    EnvironmentStatus = var.active_env == "blue" ? "live" : "standby"
     InstanceNum = "${count.index + 1}"
     Project     = "BillyTommyTeamUp"
   }
@@ -110,6 +111,7 @@ resource "aws_instance" "green" {
   tags = {
     Name        = "Tommy-${count.index + 1}"
     Env         = "green"
+#    EnvironmentStatus = var.active_env == "green" ? "live" : "standby"
     InstanceNum = "${count.index + 1}"
     Project     = "BillyTommyTeamUp"
   }
@@ -118,7 +120,8 @@ resource "aws_instance" "green" {
 # Creating the Application Load Balancer
 resource "aws_lb" "app_lb" {
 #  count              = var.create_alb ? 1 : 0
-  name               = "command-center-${var.active_env}-${random_id.suffix.hex}"
+  name               = "command-center"
+#  name               = "command-center-${var.active_env}-${random_id.suffix.hex}"
   internal           = false
   load_balancer_type = "application"
   subnets            = [aws_subnet.subnet_a.id, aws_subnet.subnet_b.id]
@@ -128,17 +131,19 @@ resource "aws_lb" "app_lb" {
     Name        = "Command Center"
     Environment = var.active_env
     Project     = "BillyTommyTeamUp"
+    ActiveStack = var.active_env
   }
 }
 
 # Setting up a random ID for the Load Balancer so that they have unique names
-resource "random_id" "suffix" {
+/*resource "random_id" "suffix" {
   byte_length = 4
-}
+}*/
 
 # Creating the target groups for the Application Load Balancer
 resource "aws_lb_target_group" "blue_tg" {
-  name     = "blue-morpher-${random_id.suffix.hex}"
+  name     = "blue-morpher"
+#  name     = "blue-morpher-${random_id.suffix.hex}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -155,7 +160,8 @@ resource "aws_lb_target_group" "blue_tg" {
 }
 
 resource "aws_lb_target_group" "green_tg" {
-  name     = "green-morpher-${random_id.suffix.hex}"
+  name     = "blue-morpher"
+#  name     = "green-morpher-${random_id.suffix.hex}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -173,9 +179,7 @@ resource "aws_lb_target_group" "green_tg" {
 
 # Setting up a Listener for the Load Balancer
 resource "aws_lb_listener" "http" {
-#  count             = var.create_alb ? 1 : 0
   load_balancer_arn = aws_lb.app_lb.arn
-#  load_balancer_arn = aws_lb.app_lb[0].arn
   port              = 80
   protocol          = "HTTP"
 
