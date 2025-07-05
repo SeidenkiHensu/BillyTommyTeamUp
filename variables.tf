@@ -25,6 +25,13 @@ variable "active_env" {
   default     = "blue"
 }
 
+# Setting up a variable on if an ALB is already created
+variable "manage_alb" {
+  description = "Whether Terraform should manage (create) the ALB"
+  type        = bool
+  default     = true
+}
+
 # Setting up a variable for usernames. Having it set up as a list is so I can list multple users if need be
 variable "user_name" {
   description = "The name of the IAM user to create."
@@ -39,8 +46,8 @@ variable "existing_users" {
 }
 
 # Sets the default on if a load balancer needs to be created
-variable "create_alb" {
+/*variable "create_alb" {
   description = "Whether to create a new ALB"
   type        = bool
   default     = true
-}
+}*/
