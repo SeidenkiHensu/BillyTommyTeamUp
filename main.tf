@@ -120,6 +120,7 @@ resource "aws_instance" "green" {
 # Creating the Application Load Balancer
 resource "aws_lb" "app_lb" {
 #  count              = var.create_alb ? 1 : 0
+  count              = var.manage_alb ? 1 : 0
   name               = "command-center"
 #  name               = "command-center-${var.active_env}-${random_id.suffix.hex}"
   internal           = false
@@ -135,6 +136,21 @@ resource "aws_lb" "app_lb" {
   }
 }
 
+# This is for if the ALB is already created
+data "aws_lb" "existing_app_lb" {
+  count = var.manage_alb ? 0 : 1
+  name  = "command-center"
+}
+
+locals {
+  alb_arn = var.manage_alb ? aws_lb.app_lb[0].arn : data.aws_lb.existing_app_lb[0].arn
+
+  blue_tg_arn  = var.manage_alb ? aws_lb_target_group.blue_tg[0].arn : data.aws_lb_target_group.blue_tg[0].arn
+  green_tg_arn = var.manage_alb ? aws_lb_target_group.green_tg[0].arn : data.aws_lb_target_group.green_tg[0].arn
+
+  active_tg_arn = var.active_env == "blue" ? local.blue_tg_arn : local.green_tg_arn
+}
+
 # Setting up a random ID for the Load Balancer so that they have unique names
 /*resource "random_id" "suffix" {
   byte_length = 4
@@ -142,6 +158,7 @@ resource "aws_lb" "app_lb" {
 
 # Creating the target groups for the Application Load Balancer
 resource "aws_lb_target_group" "blue_tg" {
+  count    = var.manage_alb ? 0 : 1
   name     = "blue-morpher"
 #  name     = "blue-morpher-${random_id.suffix.hex}"
   port     = 80
@@ -159,8 +176,14 @@ resource "aws_lb_target_group" "blue_tg" {
   }
 }
 
+data "aws_lb_target_group" "blue_tg" {
+  count = var.manage_alb ? 0 : 1
+  name  = "blue-morpher"
+}
+
 resource "aws_lb_target_group" "green_tg" {
-  name     = "blue-morpher"
+  count    = var.manage_alb ? 0 : 1
+  name     = "green-morpher"
 #  name     = "green-morpher-${random_id.suffix.hex}"
   port     = 80
   protocol = "HTTP"
@@ -177,16 +200,23 @@ resource "aws_lb_target_group" "green_tg" {
   }
 }
 
+data "aws_lb_target_group" "green_tg" {
+  count = var.manage_alb ? 0 : 1
+  name  = "green-morpher"
+}
+
 # Setting up a Listener for the Load Balancer
 resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.app_lb.arn
+  load_balancer_arn = local.alb_arn
+  #load_balancer_arn = aws_lb.app_lb.arn
   port              = 80
   protocol          = "HTTP"
 
   # This sets the default stack to be looked at
   default_action {
     type             = "forward"
-    target_group_arn = var.active_env == "blue" ? aws_lb_target_group.blue_tg.arn : aws_lb_target_group.green_tg.arn
+    target_group_arn = local.active_tg_arn
+    #target_group_arn = var.active_env == "blue" ? aws_lb_target_group.blue_tg.arn : aws_lb_target_group.green_tg.arn
   }
 
 # This is optional but makes sure the listener doesn't forward to a group before it's ready
@@ -199,7 +229,8 @@ resource "aws_lb_listener" "http" {
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
 resource "aws_lb_target_group_attachment" "blue_attach" {
   count            = var.create_ec2_instances ? 3 : 0
-  target_group_arn = aws_lb_target_group.blue_tg.arn
+  target_group_arn = var.manage_alb ? aws_lb_target_group.blue_tg[0].arn : data.aws_lb_target_group.blue_tg[0].arn
+  #target_group_arn = aws_lb_target_group.blue_tg.arn
   target_id        = aws_instance.blue[count.index].id
   port             = 80
 }
@@ -207,7 +238,8 @@ resource "aws_lb_target_group_attachment" "blue_attach" {
 # Setting up a Target Group Attachment for the Load Balancer to the Green Instances
 resource "aws_lb_target_group_attachment" "green_attach" {
   count            = var.create_ec2_instances ? 3 : 0
-  target_group_arn = aws_lb_target_group.green_tg.arn
+  target_group_arn = var.manage_alb ? aws_lb_target_group.green_tg[0].arn : data.aws_lb_target_group.green_tg[0].arn
+  #target_group_arn = aws_lb_target_group.green_tg.arn
   target_id        = aws_instance.green[count.index].id
   port             = 80
 }
