@@ -237,6 +237,23 @@ data "aws_lb_listener" "http" {
 #  protocol          = "HTTP"
 }
 
+resource "aws_lb_listener_rule" "blue_green_switch" {
+  count        = var.manage_alb ? 0 : 1
+  listener_arn = data.aws_lb_listener.http[0].arn
+  priority     = 1
+
+  action {
+    type             = "forward"
+    target_group_arn = local.active_tg_arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/*"]
+    }
+  }
+}
+
 # Data sources to find existing EC2 instances
 data "aws_instances" "blue_instances" {
   count = var.create_ec2_instances ? 0 : 1
@@ -280,22 +297,24 @@ resource "aws_ec2_tag" "green_instance_tags" {
 
 # Resource to manage the existing ALB listener's default action for blue-green switching
 # This allows Terraform to switch target groups even when manage_alb = false
-resource "aws_lb_listener" "managed_listener" {
-  count             = var.manage_alb ? 0 : 1
-  load_balancer_arn = local.alb_arn
-  port              = 80
-  protocol          = "HTTP"
+# resource "aws_lb_listener" "managed_listener" {
+#   count             = var.manage_alb ? 0 : 1
+#   load_balancer_arn = local.alb_arn
+#   port              = 80
+#   protocol          = "HTTP"
+#
+#   default_action {
+#     type             = "forward"
+#     target_group_arn = local.active_tg_arn
+#   }
+#
+#   # This ensures we're managing the existing listener, not creating a new one
+#   lifecycle {
+#     ignore_changes = [load_balancer_arn, port, protocol]
+#   }
+# }
 
-  default_action {
-    type             = "forward"
-    target_group_arn = local.active_tg_arn
-  }
 
-  # This ensures we're managing the existing listener, not creating a new one
-  lifecycle {
-    ignore_changes = [load_balancer_arn, port, protocol]
-  }
-}
 
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
 resource "aws_lb_target_group_attachment" "blue_attach" {
