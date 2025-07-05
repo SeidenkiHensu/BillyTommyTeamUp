@@ -237,10 +237,12 @@ data "aws_lb_listener" "http" {
 #  protocol          = "HTTP"
 }
 
+# Resource to manage the listener rule for blue-green switching
+# Using priority 100 to avoid conflicts with existing rules
 resource "aws_lb_listener_rule" "blue_green_switch" {
   count        = var.manage_alb ? 0 : 1
   listener_arn = data.aws_lb_listener.http[0].arn
-  priority     = 1
+  priority     = 100
 
   action {
     type             = "forward"
