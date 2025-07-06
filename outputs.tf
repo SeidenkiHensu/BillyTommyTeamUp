@@ -1,9 +1,24 @@
+# Sets up an output for the active stack
+output "active_stack" {
+  description = "The currently active stack (blue or green)"
+  value       = var.active_env
+}
+
 # Sets up an output so we can see the load balancer DNS name
 output "load_balancer_dns" {
   description = "The DNS name of the application load balancer."
   value       = var.manage_alb ? aws_lb.app_lb[0].dns_name : data.aws_lb.existing_app_lb[0].dns_name
   #value       = aws_lb.app_lb.dns_name
 #  value       = var.create_alb ? aws_lb.app_lb.dns_name : ""
+}
+
+output "alb_listener_port" {
+  value = var.active_env == "blue" ? 80 : 81
+}
+
+output "alb_url" {
+  value = "http://${var.manage_alb ? aws_lb.app_lb[0].dns_name : data.aws_lb.existing_app_lb[0].dns_name}:${var.active_env == "blue" ? 80 : 81}"
+  description = "URL to access the active stack listener"
 }
 
 # Sets up an output for the CloudWatch dashboard name
@@ -17,10 +32,4 @@ output "cloudwatch_log_group_name" {
   description = "The name of the CloudWatch log group for EC2 logs."
   value       = var.create_ec2_instances ? "/ec2/instance/logs-${var.active_env}" : ""
   #value       = var.create_ec2_instances ? aws_cloudwatch_log_group.ec2_log_group[0].name : ""
-}
-
-# Sets up an output for the active stack
-output "active_stack" {
-  description = "The currently active stack (blue or green)"
-  value       = var.active_env
 }
