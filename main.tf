@@ -229,7 +229,7 @@ data "aws_lb_listener" "http" {
 resource "aws_lb_listener_rule" "blue_green_switch" {
   count        = var.manage_alb ? 0 : 1
   listener_arn = data.aws_lb_listener.http[0].arn
-  priority     = 100
+  priority     = var.listener_rule_priority
 
   action {
     type             = "forward"
