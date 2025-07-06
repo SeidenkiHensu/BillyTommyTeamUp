@@ -1,5 +1,6 @@
 terraform {
   required_version = ">= 1.12.2"
+  
 }
 
 provider "aws" {
@@ -119,10 +120,8 @@ resource "aws_instance" "green" {
 
 # Creating the Application Load Balancer
 resource "aws_lb" "app_lb" {
-#  count              = var.create_alb ? 1 : 0
   count              = var.manage_alb ? 1 : 0
   name               = "command-center"
-#  name               = "command-center-${var.active_env}-${random_id.suffix.hex}"
   internal           = false
   load_balancer_type = "application"
   subnets            = [aws_subnet.subnet_a.id, aws_subnet.subnet_b.id]
@@ -142,7 +141,6 @@ data "aws_lb" "existing_app_lb" {
   name  = "command-center"
 }
 
-# This local variable is used to set the ARN of the ALB and the target groups
 locals {
   alb_arn = var.manage_alb ? aws_lb.app_lb[0].arn : data.aws_lb.existing_app_lb[0].arn
 
@@ -152,7 +150,7 @@ locals {
   active_tg_arn = var.active_env == "blue" ? local.blue_tg_arn : local.green_tg_arn
 }
 
-# This resource is used to create the target group for the blue stack
+# Creating the target groups for the Application Load Balancer
 resource "aws_lb_target_group" "blue_tg" {
   count    = var.manage_alb ? 1 : 0
   name     = "blue-morpher"
@@ -171,13 +169,11 @@ resource "aws_lb_target_group" "blue_tg" {
   }
 }
 
-# This data source is used to find the existing target group for the blue stack
 data "aws_lb_target_group" "blue_tg" {
   count = var.manage_alb ? 0 : 1
   name  = "blue-morpher"
 }
 
-# This resource is used to create the target group for the green stack
 resource "aws_lb_target_group" "green_tg" {
   count    = var.manage_alb ? 1 : 0
   name     = "green-morpher"
@@ -196,7 +192,6 @@ resource "aws_lb_target_group" "green_tg" {
   }
 }
 
-# This data source is used to find the existing target group for the green stack
 data "aws_lb_target_group" "green_tg" {
   count = var.manage_alb ? 0 : 1
   name  = "green-morpher"
@@ -222,14 +217,14 @@ resource "aws_lb_listener" "http" {
   ]
 }
 
-# This data source is used to find the existing listener for the ALB
 data "aws_lb_listener" "http" {
   count             = var.manage_alb ? 0 : 1
   load_balancer_arn = local.alb_arn
   port              = 80
+#  protocol          = "HTTP"
 }
 
-# This resource is used to create the listener rule for blue-green switching
+# Resource to manage the listener rule for blue-green switching
 # Using priority 100 to avoid conflicts with existing rules
 resource "aws_lb_listener_rule" "blue_green_switch" {
   count        = var.manage_alb ? 0 : 1
@@ -248,7 +243,7 @@ resource "aws_lb_listener_rule" "blue_green_switch" {
   }
 }
 
-# Data sources to find existing blue EC2 instances
+# Data sources to find existing EC2 instances
 data "aws_instances" "blue_instances" {
   count = var.create_ec2_instances ? 0 : 1
   filter {
@@ -261,7 +256,6 @@ data "aws_instances" "blue_instances" {
   }
 }
 
-#  Data sources to find existing green EC2 instances
 data "aws_instances" "green_instances" {
   count = var.create_ec2_instances ? 0 : 1
   filter {
@@ -276,47 +270,44 @@ data "aws_instances" "green_instances" {
 
 # Resource to manage tags for existing blue instances
 resource "aws_ec2_tag" "blue_instance_tags" {
-  count     = var.create_ec2_instances ? 0 : length(data.aws_instances.blue_instances[0].ids)
+  count       = var.create_ec2_instances ? 0 : length(data.aws_instances.blue_instances[0].ids)
   resource_id = data.aws_instances.blue_instances[0].ids[count.index]
-  key        = "EnvironmentStatus"
-  value      = var.active_env == "blue" ? "live" : "standby"
+  key         = "EnvironmentStatus"
+  value       = var.active_env == "blue" ? "live" : "standby"
 }
 
 # Resource to manage tags for existing green instances
 resource "aws_ec2_tag" "green_instance_tags" {
-  count     = var.create_ec2_instances ? 0 : length(data.aws_instances.green_instances[0].ids)
+  count       = var.create_ec2_instances ? 0 : length(data.aws_instances.green_instances[0].ids)
   resource_id = data.aws_instances.green_instances[0].ids[count.index]
-  key        = "EnvironmentStatus"
-  value      = var.active_env == "green" ? "live" : "standby"
+  key         = "EnvironmentStatus"
+  value       = var.active_env == "green" ? "live" : "standby"
 }
 
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
 resource "aws_lb_target_group_attachment" "blue_attach" {
   count            = var.create_ec2_instances ? 3 : 0
   target_group_arn = var.manage_alb ? aws_lb_target_group.blue_tg[0].arn : data.aws_lb_target_group.blue_tg[0].arn
-  #target_group_arn = aws_lb_target_group.blue_tg.arn
   target_id        = aws_instance.blue[count.index].id
   port             = 80
 }
 
-# Sets up a Target Group Attachment for the Load Balancer to the Green Instances
+# Setting up a Target Group Attachment for the Load Balancer to the Green Instances
 resource "aws_lb_target_group_attachment" "green_attach" {
   count            = var.create_ec2_instances ? 3 : 0
   target_group_arn = var.manage_alb ? aws_lb_target_group.green_tg[0].arn : data.aws_lb_target_group.green_tg[0].arn
-  #target_group_arn = aws_lb_target_group.green_tg.arn
   target_id        = aws_instance.green[count.index].id
   port             = 80
 }
 
-# Sets up a CloudWatch Log Group for EC2 Instance Logs
+# Setting up a CloudWatch Log Group for EC2 Instance Logs
 resource "aws_cloudwatch_log_group" "ec2_log_group" {
-  count            = var.create_ec2_instances ? 1 : 0
-  name             = "ec2/instance/logs-${var.active_env}"
-#  name             = "/ec2/instance/logs-${random_id.suffix.hex}"
+  count             = var.create_ec2_instances ? 1 : 0
+  name              = "ec2/instance/logs-${var.active_env}"
   retention_in_days = 14
 }
 
-# Sets up a CloudWatch Dashboard for EC2 Instance Monitoring. Only setting up CPU usage for the demo
+# Setting up a CloudWatch Dashboard for EC2 Instance Monitoring. Only setting up CPU usage for the demo
 resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
   count          = var.create_ec2_instances ? 1 : 0
   dashboard_name = "power-ranger-morphing-grid"
