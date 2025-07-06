@@ -45,9 +45,9 @@ variable "existing_users" {
   default     = []
 }
 
-# Sets the default priority for the blue-green switch rule
-variable "listener_rule_priority" {
-  description = "The priority for the blue-green switch rule"
+# Sets the priority for the blue-green switch rule
+variable "priority_base" {
+  description = "Base number for dynamic listener rule priorities"
   type        = number
-  default     = 151
+  default     = 100
 }
