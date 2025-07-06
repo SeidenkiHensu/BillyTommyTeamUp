@@ -205,50 +205,6 @@ data "aws_lb_target_group" "green_tg" {
   name  = "green-morpher"
 }
 
-# Setting up a Listener for the Load Balancer
-/*resource "aws_lb_listener" "http" {
-  count             = var.manage_alb ? 1 : 0
-  load_balancer_arn = local.alb_arn
-  port              = 80
-  protocol          = "HTTP"
-
-  # This sets the default stack to be looked at
-  default_action {
-    type             = "forward"
-    target_group_arn = local.active_tg_arn
-  }
-
-# This is optional but makes sure the listener doesn't forward to a group before it's ready
-  depends_on = [
-    aws_lb_target_group.blue_tg,
-    aws_lb_target_group.green_tg
-  ]
-}
-
-data "aws_lb_listener" "http" {
-  count             = var.manage_alb ? 0 : 1
-  load_balancer_arn = local.alb_arn
-  port              = 80
-#  protocol          = "HTTP"
-}
-
-# Resource to manage the listener rule for blue-green switching
-resource "aws_lb_listener_rule" "blue_green_switch" {
-  count        = var.manage_alb ? 0 : 1
-  listener_arn = data.aws_lb_listener.http[0].arn
-  priority     = var.listener_rule_priority
-  action {
-    type             = "forward"
-    target_group_arn = local.active_tg_arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/*"]
-    }
-  }
-}*/
-
 # Setting up a Blue Stack Listener for the Load Balancer
 resource "aws_lb_listener" "blue_listener" {
   count             = var.active_env == "blue" && var.manage_alb ? 1 : 0
