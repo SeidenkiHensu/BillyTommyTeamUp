@@ -49,5 +49,5 @@ variable "existing_users" {
 variable "priority_base" {
   description = "Base number for dynamic listener rule priorities"
   type        = number
-  default     = 200
+  default     = 100
 }
