@@ -23,6 +23,10 @@ variable "active_env" {
   description = "Which environment is live: blue or green."
   type        = string
   default     = "blue"
+  validation {
+    condition     = can(regex("^(blue|green)$", var.active_env))
+    error_message = "active_env must be either 'blue' or 'green'."
+  }
 }
 
 # Setting up a variable on if an ALB is already created
@@ -43,11 +47,4 @@ variable "existing_users" {
   description = "List of IAM users that already exist in AWS"
   type        = list(string)
   default     = []
-}
-
-# Sets the priority for the blue-green switch rule
-variable "priority_base" {
-  description = "Base number for dynamic listener rule priorities"
-  type        = number
-  default     = 100
 }
