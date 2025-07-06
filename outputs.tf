@@ -19,6 +19,7 @@ output "cloudwatch_log_group_name" {
   #value       = var.create_ec2_instances ? aws_cloudwatch_log_group.ec2_log_group[0].name : ""
 }
 
+# Sets up an output for the active stack
 output "active_stack" {
   description = "The currently active stack (blue or green)"
   value       = var.active_env

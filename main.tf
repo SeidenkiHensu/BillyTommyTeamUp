@@ -120,10 +120,8 @@ resource "aws_instance" "green" {
 
 # Creating the Application Load Balancer
 resource "aws_lb" "app_lb" {
-#  count              = var.create_alb ? 1 : 0
   count              = var.manage_alb ? 1 : 0
   name               = "command-center"
-#  name               = "command-center-${var.active_env}-${random_id.suffix.hex}"
   internal           = false
   load_balancer_type = "application"
   subnets            = [aws_subnet.subnet_a.id, aws_subnet.subnet_b.id]
@@ -152,16 +150,10 @@ locals {
   active_tg_arn = var.active_env == "blue" ? local.blue_tg_arn : local.green_tg_arn
 }
 
-# Setting up a random ID for the Load Balancer so that they have unique names
-/*resource "random_id" "suffix" {
-  byte_length = 4
-}*/
-
 # Creating the target groups for the Application Load Balancer
 resource "aws_lb_target_group" "blue_tg" {
   count    = var.manage_alb ? 1 : 0
   name     = "blue-morpher"
-#  name     = "blue-morpher-${random_id.suffix.hex}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -180,13 +172,11 @@ resource "aws_lb_target_group" "blue_tg" {
 data "aws_lb_target_group" "blue_tg" {
   count = var.manage_alb ? 0 : 1
   name  = "blue-morpher"
-#  vpc_id = aws_vpc.main.id
 }
 
 resource "aws_lb_target_group" "green_tg" {
   count    = var.manage_alb ? 1 : 0
   name     = "green-morpher"
-#  name     = "green-morpher-${random_id.suffix.hex}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -205,14 +195,12 @@ resource "aws_lb_target_group" "green_tg" {
 data "aws_lb_target_group" "green_tg" {
   count = var.manage_alb ? 0 : 1
   name  = "green-morpher"
-#  vpc_id = aws_vpc.main.id
 }
 
 # Setting up a Listener for the Load Balancer
 resource "aws_lb_listener" "http" {
   count             = var.manage_alb ? 1 : 0
   load_balancer_arn = local.alb_arn
-  #load_balancer_arn = aws_lb.app_lb.arn
   port              = 80
   protocol          = "HTTP"
 
@@ -220,7 +208,6 @@ resource "aws_lb_listener" "http" {
   default_action {
     type             = "forward"
     target_group_arn = local.active_tg_arn
-    #target_group_arn = var.active_env == "blue" ? aws_lb_target_group.blue_tg.arn : aws_lb_target_group.green_tg.arn
   }
 
 # This is optional but makes sure the listener doesn't forward to a group before it's ready
@@ -283,46 +270,24 @@ data "aws_instances" "green_instances" {
 
 # Resource to manage tags for existing blue instances
 resource "aws_ec2_tag" "blue_instance_tags" {
-  count     = var.create_ec2_instances ? 0 : length(data.aws_instances.blue_instances[0].ids)
+  count       = var.create_ec2_instances ? 0 : length(data.aws_instances.blue_instances[0].ids)
   resource_id = data.aws_instances.blue_instances[0].ids[count.index]
-  key        = "EnvironmentStatus"
-  value      = var.active_env == "blue" ? "live" : "standby"
+  key         = "EnvironmentStatus"
+  value       = var.active_env == "blue" ? "live" : "standby"
 }
 
 # Resource to manage tags for existing green instances
 resource "aws_ec2_tag" "green_instance_tags" {
-  count     = var.create_ec2_instances ? 0 : length(data.aws_instances.green_instances[0].ids)
+  count       = var.create_ec2_instances ? 0 : length(data.aws_instances.green_instances[0].ids)
   resource_id = data.aws_instances.green_instances[0].ids[count.index]
-  key        = "EnvironmentStatus"
-  value      = var.active_env == "green" ? "live" : "standby"
+  key         = "EnvironmentStatus"
+  value       = var.active_env == "green" ? "live" : "standby"
 }
-
-# Resource to manage the existing ALB listener's default action for blue-green switching
-# This allows Terraform to switch target groups even when manage_alb = false
-# resource "aws_lb_listener" "managed_listener" {
-#   count             = var.manage_alb ? 0 : 1
-#   load_balancer_arn = local.alb_arn
-#   port              = 80
-#   protocol          = "HTTP"
-#
-#   default_action {
-#     type             = "forward"
-#     target_group_arn = local.active_tg_arn
-#   }
-#
-#   # This ensures we're managing the existing listener, not creating a new one
-#   lifecycle {
-#     ignore_changes = [load_balancer_arn, port, protocol]
-#   }
-# }
-
-
 
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
 resource "aws_lb_target_group_attachment" "blue_attach" {
   count            = var.create_ec2_instances ? 3 : 0
   target_group_arn = var.manage_alb ? aws_lb_target_group.blue_tg[0].arn : data.aws_lb_target_group.blue_tg[0].arn
-  #target_group_arn = aws_lb_target_group.blue_tg.arn
   target_id        = aws_instance.blue[count.index].id
   port             = 80
 }
@@ -331,16 +296,14 @@ resource "aws_lb_target_group_attachment" "blue_attach" {
 resource "aws_lb_target_group_attachment" "green_attach" {
   count            = var.create_ec2_instances ? 3 : 0
   target_group_arn = var.manage_alb ? aws_lb_target_group.green_tg[0].arn : data.aws_lb_target_group.green_tg[0].arn
-  #target_group_arn = aws_lb_target_group.green_tg.arn
   target_id        = aws_instance.green[count.index].id
   port             = 80
 }
 
 # Setting up a CloudWatch Log Group for EC2 Instance Logs
 resource "aws_cloudwatch_log_group" "ec2_log_group" {
-  count            = var.create_ec2_instances ? 1 : 0
-  name             = "ec2/instance/logs-${var.active_env}"
-#  name             = "/ec2/instance/logs-${random_id.suffix.hex}"
+  count             = var.create_ec2_instances ? 1 : 0
+  name              = "ec2/instance/logs-${var.active_env}"
   retention_in_days = 14
 }
 
