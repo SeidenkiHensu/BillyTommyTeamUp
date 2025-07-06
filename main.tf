@@ -59,10 +59,18 @@ resource "aws_security_group" "ec2_sg" {
   description = "Allow HTTP and SSH"
   vpc_id      = aws_vpc.main.id
 
-  # Allows HTTP traffic from the internet
+  # Allows HTTP traffic for Blue Stack
   ingress {
     from_port   = 80
     to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+    # Allows HTTP traffic for Green Stack
+  ingress {
+    from_port   = 81
+    to_port     = 81
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -198,7 +206,7 @@ data "aws_lb_target_group" "green_tg" {
 }
 
 # Setting up a Listener for the Load Balancer
-resource "aws_lb_listener" "http" {
+/*resource "aws_lb_listener" "http" {
   count             = var.manage_alb ? 1 : 0
   load_balancer_arn = local.alb_arn
   port              = 80
@@ -228,7 +236,7 @@ data "aws_lb_listener" "http" {
 resource "aws_lb_listener_rule" "blue_green_switch" {
   count        = var.manage_alb ? 0 : 1
   listener_arn = data.aws_lb_listener.http[0].arn
-  priority     = var.priority_base + count.index
+  priority     = var.listener_rule_priority
   action {
     type             = "forward"
     target_group_arn = local.active_tg_arn
@@ -239,6 +247,40 @@ resource "aws_lb_listener_rule" "blue_green_switch" {
       values = ["/*"]
     }
   }
+}*/
+
+# Setting up a Blue Stack Listener for the Load Balancer
+resource "aws_lb_listener" "blue_listener" {
+  count             = var.active_env == "blue" && var.manage_alb ? 1 : 0
+  load_balancer_arn = local.alb_arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = local.blue_tg_arn
+  }
+
+  depends_on = [
+    aws_lb_target_group.blue_tg
+  ]
+}
+
+# Setting up a Green Stack Listener for the Load Balancer
+resource "aws_lb_listener" "green_listener" {
+  count             = var.active_env == "green" && var.manage_alb ? 1 : 0
+  load_balancer_arn = local.alb_arn
+  port              = 81
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = local.green_tg_arn
+  }
+
+  depends_on = [
+    aws_lb_target_group.green_tg
+  ]
 }
 
 # Data sources to find existing EC2 instances
