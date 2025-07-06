@@ -45,9 +45,9 @@ variable "existing_users" {
   default     = []
 }
 
-# Sets the default on if a load balancer needs to be created
-/*variable "create_alb" {
-  description = "Whether to create a new ALB"
-  type        = bool
-  default     = true
-}*/
+# Sets the default priority for the blue-green switch rule
+variable "listener_rule_priority" {
+  description = "The priority for the blue-green switch rule"
+  type        = number
+  default     = 151
+}
