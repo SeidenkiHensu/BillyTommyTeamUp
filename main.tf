@@ -94,7 +94,7 @@ resource "aws_security_group" "ec2_sg" {
 
 # For this demo, I'm creating 3 instances for each stack, which goes against the free tier outside of this demo if using for long periods of time.
 resource "aws_instance" "blue" {
-  count                  = var.create_ec2_instances ? 3 : 0
+  count                  = var.create_ec2_instances ? var.instances_per_stack : 0
   ami                    = var.ami_id
   instance_type          = "t2.micro"
   subnet_id              = aws_subnet.subnet_a.id
@@ -102,27 +102,29 @@ resource "aws_instance" "blue" {
 
 # Adding tags to help during audit purposes like cost awareness
   tags = {
-    Name              = "Billy-${count.index + 1}"
+    Name              = "${var.environment}-Billy-${count.index + 1}"
     Env               = "blue"
     EnvironmentStatus = var.active_env == "blue" ? "live" : "standby"
     InstanceNum       = "${count.index + 1}"
     Project           = "BillyTommyTeamUp"
+    Environment       = var.environment
   }
 }
 
 resource "aws_instance" "green" {
-  count                  = var.create_ec2_instances ? 3 : 0
+  count                  = var.create_ec2_instances ? var.instances_per_stack : 0
   ami                    = var.ami_id
   instance_type          = "t2.micro"
   subnet_id              = aws_subnet.subnet_b.id
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
   tags = {
-    Name              = "Tommy-${count.index + 1}"
+    Name              = "${var.environment}-Tommy-${count.index + 1}"
     Env               = "green"
     EnvironmentStatus = var.active_env == "green" ? "live" : "standby"
     InstanceNum       = "${count.index + 1}"
     Project           = "BillyTommyTeamUp"
+    Environment       = var.environment
   }
 }
 
@@ -137,7 +139,7 @@ resource "aws_lb" "app_lb" {
 
   tags = {
     Name        = "Command Center"
-    Environment = var.active_env
+    Environment = var.environment
     Project     = "BillyTommyTeamUp"
     ActiveStack = var.active_env
   }
@@ -282,7 +284,7 @@ resource "aws_ec2_tag" "green_instance_tags" {
 
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
 resource "aws_lb_target_group_attachment" "blue_attach" {
-  count            = var.create_ec2_instances ? 3 : 0
+  count            = var.create_ec2_instances ? var.instances_per_stack : 0
   target_group_arn = var.manage_alb ? aws_lb_target_group.blue_tg[0].arn : data.aws_lb_target_group.blue_tg[0].arn
   target_id        = aws_instance.blue[count.index].id
   port             = 80
@@ -290,7 +292,7 @@ resource "aws_lb_target_group_attachment" "blue_attach" {
 
 # Setting up a Target Group Attachment for the Load Balancer to the Green Instances
 resource "aws_lb_target_group_attachment" "green_attach" {
-  count            = var.create_ec2_instances ? 3 : 0
+  count            = var.create_ec2_instances ? var.instances_per_stack : 0
   target_group_arn = var.manage_alb ? aws_lb_target_group.green_tg[0].arn : data.aws_lb_target_group.green_tg[0].arn
   target_id        = aws_instance.green[count.index].id
   port             = 80
@@ -299,14 +301,14 @@ resource "aws_lb_target_group_attachment" "green_attach" {
 # Setting up a CloudWatch Log Group for EC2 Instance Logs
 resource "aws_cloudwatch_log_group" "ec2_log_group" {
   count             = var.create_ec2_instances ? 1 : 0
-  name              = "ec2/instance/logs-${var.active_env}"
+  name              = "ec2/instance/logs-${var.environment}-${var.active_env}"
   retention_in_days = 14
 }
 
 # Setting up a CloudWatch Dashboard for EC2 Instance Monitoring. Only setting up CPU usage for the demo
 resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
   count          = var.create_ec2_instances ? 1 : 0
-  dashboard_name = "power-ranger-morphing-grid"
+  dashboard_name = "BillyTommy-${var.environment}"
   dashboard_body = jsonencode({
     widgets = [
       {
@@ -316,18 +318,55 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
         width      = 24,
         height     = 6,
         properties = {
-          metrics = [
-            [ "AWS/EC2", "CPUUtilization", "InstanceId", "${aws_instance.blue[0].id}" ],
-            [ ".", "CPUUtilization", "InstanceId", "${aws_instance.blue[1].id}" ],
-            [ ".", "CPUUtilization", "InstanceId", "${aws_instance.blue[2].id}" ],
-            [ "AWS/EC2", "CPUUtilization", "InstanceId", "${aws_instance.green[0].id}" ],
-            [ ".", "CPUUtilization", "InstanceId", "${aws_instance.green[1].id}" ],
-            [ ".", "CPUUtilization", "InstanceId", "${aws_instance.green[2].id}" ],
-          ],
-          period = 300,
-          stat   = "Average",
-          region = var.region,
+          metrics = concat(
+            [
+              for idx in range(var.instances_per_stack) : [
+                "AWS/EC2",
+                "CPUUtilization",
+                "InstanceId",
+                aws_instance.blue[idx].id
+              ]
+            ],
+            [
+              for idx in range(var.instances_per_stack) : [
+                "AWS/EC2",
+                "CPUUtilization",
+                "InstanceId",
+                aws_instance.green[idx].id
+              ]
+            ]
+          )
+          period = 300
+          stat   = "Average"
+          region = var.region
           title  = "EC2 CPU Utilization"
+        }
+      },
+      {
+        type       = "metric",
+        x          = 0,
+        y          = 7,
+        width      = 24,
+        height     = 6,
+        properties = {
+          metrics = [
+            [ "AWS/ApplicationELB", "RequestCount", "LoadBalancer", local.alb_arn ],
+            [ ".", "TargetResponseTime", "LoadBalancer", local.alb_arn ]
+          ]
+          period = 300
+          stat   = "Sum"
+          region = var.region
+          title  = "ALB Requests and Latency"
+        }
+      },
+      {
+        type       = "text",
+        x          = 0,
+        y          = 13,
+        width      = 24,
+        height     = 3,
+        properties = {
+          markdown = "### Active stack\\nEnvironment: ${var.environment}\\nActive stack (blue/green): ${var.active_env}"
         }
       }
     ]

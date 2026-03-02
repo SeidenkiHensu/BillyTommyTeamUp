@@ -27,15 +27,19 @@ resource "aws_iam_access_key" "user_keys" {
   user     = each.value.name
 }
 
-# Setting up IAM Access Key Outputs. This is just for demo purposes. In a real world scenario, we would be using secrets manager to store the access keys.
-output "iam_user_access_keys" {
-  description = "Access keys for provisioned IAM users."
-  value       = {
-    for name, key in aws_iam_access_key.user_keys :
-    name => {
-      access_key_id     = key.id
-      secret_access_key = key.secret
-    }
+resource "aws_ssm_parameter" "iam_user_access_keys" {
+  for_each = aws_iam_access_key.user_keys
+
+  name  = "/BillyTommyTeamUp/iam/${each.key}"
+  type  = "SecureString"
+  value = jsonencode({
+    access_key_id     = each.value.id
+    secret_access_key = each.value.secret
+  })
+
+  tags = {
+    Project     = "BillyTommyTeamUp"
+    Environment = var.environment
+    User        = each.key
   }
-  sensitive = true
 }
