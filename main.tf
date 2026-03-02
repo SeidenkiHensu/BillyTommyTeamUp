@@ -308,7 +308,7 @@ resource "aws_cloudwatch_log_group" "ec2_log_group" {
 # Setting up a CloudWatch Dashboard for EC2 Instance Monitoring. Only setting up CPU usage for the demo
 resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
   count          = var.create_ec2_instances ? 1 : 0
-  dashboard_name = "BillyTommy-${var.environment}"
+  dashboard_name = "morphing-grid-${var.environment}"
   dashboard_body = jsonencode({
     widgets = [
       {
