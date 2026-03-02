@@ -11,6 +11,13 @@ variable "ami_id" {
   type        = string
 }
 
+# Control how many EC2 instances to create per blue/green stack when create_ec2_instances is true
+variable "instances_per_stack" {
+  description = "Number of EC2 instances per blue/green stack (keep low to stay within free tier)."
+  type        = number
+  default     = 1
+}
+
 # Sets the default on if ec2 instances need to be created. This is so I can have a list of ec2 instances that already exist in AWS
 variable "create_ec2_instances" {
   description = "Whether to create EC2 instances."
@@ -34,6 +41,13 @@ variable "manage_alb" {
   description = "Whether Terraform should manage (create) the ALB"
   type        = bool
   default     = true
+}
+
+# High-level environment label (e.g. sandbox, prod) for tagging and naming
+variable "environment" {
+  description = "Logical environment name for this deployment (e.g. sandbox, prod)."
+  type        = string
+  default     = "sandbox"
 }
 
 # Setting up a variable for usernames. Having it set up as a list is so I can list multple users if need be
