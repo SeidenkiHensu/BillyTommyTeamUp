@@ -1,10 +1,23 @@
 terraform {
   required_version = ">= 1.12.2"
-  
+
+  #Need to specify the provider and version. (run "terraform providers" to see what's available. Then run "terraform init -upgrade" to update the provider.)
+  #  required_providers {
+  #    aws = {
+  #      source  = "hashicorp/aws"
+  #      version = ">= 5.0.0"
+  #    }
+  #  }
 }
 
 provider "aws" {
   region = var.region
+
+  default_tags {
+    tags = {
+      Project = "BillyTommyTeamUp"
+    }
+  }
 }
 
 # Sets up a VPC
@@ -67,7 +80,7 @@ resource "aws_security_group" "ec2_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-    # Allows HTTP traffic for Green Stack
+  # Allows HTTP traffic for Green Stack
   ingress {
     from_port   = 81
     to_port     = 81
@@ -100,14 +113,14 @@ resource "aws_instance" "blue" {
   subnet_id              = aws_subnet.subnet_a.id
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
 
-# Adding tags to help during audit purposes like cost awareness
+  # Adding tags to help during audit purposes like cost awareness
   tags = {
     Name              = "${var.environment}-Billy-${count.index + 1}"
     Env               = "blue"
     EnvironmentStatus = var.active_env == "blue" ? "live" : "standby"
     InstanceNum       = "${count.index + 1}"
-    Project           = "BillyTommyTeamUp"
-    Environment       = var.environment
+    #Project           = "BillyTommyTeamUp" #Setup default tags to override this
+    Environment = var.environment
   }
 }
 
@@ -123,24 +136,29 @@ resource "aws_instance" "green" {
     Env               = "green"
     EnvironmentStatus = var.active_env == "green" ? "live" : "standby"
     InstanceNum       = "${count.index + 1}"
-    Project           = "BillyTommyTeamUp"
-    Environment       = var.environment
+    #Project           = "BillyTommyTeamUp" #Setup default tags to override this
+    Environment = var.environment
   }
 }
 
 # Creating the Application Load Balancer
 resource "aws_lb" "app_lb" {
   count              = var.manage_alb ? 1 : 0
-  name               = "command-center"
+  name               = "command-center-${var.environment}"
   internal           = false
   load_balancer_type = "application"
   subnets            = [aws_subnet.subnet_a.id, aws_subnet.subnet_b.id]
   security_groups    = [aws_security_group.ec2_sg.id]
 
+  # Prevent the ALB from being destroyed in the prod environment (once it exists). This also needs to be fixed and tested.
+  #  lifecycle {
+  #    prevent_destroy = true
+  #  }
+
   tags = {
     Name        = "Command Center"
     Environment = var.environment
-    Project     = "BillyTommyTeamUp"
+    #Project     = "BillyTommyTeamUp" #Setup default tags to override this
     ActiveStack = var.active_env
   }
 }
@@ -148,11 +166,12 @@ resource "aws_lb" "app_lb" {
 # This is for if the ALB is already created
 data "aws_lb" "existing_app_lb" {
   count = var.manage_alb ? 0 : 1
-  name  = "command-center"
+  name  = "command-center-${var.environment}"
 }
 
 locals {
-  alb_arn = var.manage_alb ? aws_lb.app_lb[0].arn : data.aws_lb.existing_app_lb[0].arn
+  alb_arn              = var.manage_alb ? aws_lb.app_lb[0].arn : data.aws_lb.existing_app_lb[0].arn
+  alb_metric_dimension = var.manage_alb ? aws_lb.app_lb[0].arn_suffix : data.aws_lb.existing_app_lb[0].arn_suffix
 
   blue_tg_arn  = var.manage_alb ? aws_lb_target_group.blue_tg[0].arn : data.aws_lb_target_group.blue_tg[0].arn
   green_tg_arn = var.manage_alb ? aws_lb_target_group.green_tg[0].arn : data.aws_lb_target_group.green_tg[0].arn
@@ -163,7 +182,7 @@ locals {
 # Creating the target groups for the Application Load Balancer
 resource "aws_lb_target_group" "blue_tg" {
   count    = var.manage_alb ? 1 : 0
-  name     = "blue-morpher"
+  name     = "${var.environment}-blue-morpher"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -181,12 +200,12 @@ resource "aws_lb_target_group" "blue_tg" {
 
 data "aws_lb_target_group" "blue_tg" {
   count = var.manage_alb ? 0 : 1
-  name  = "blue-morpher"
+  name  = "${var.environment}-blue-morpher"
 }
 
 resource "aws_lb_target_group" "green_tg" {
   count    = var.manage_alb ? 1 : 0
-  name     = "green-morpher"
+  name     = "${var.environment}-green-morpher"
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
@@ -204,7 +223,7 @@ resource "aws_lb_target_group" "green_tg" {
 
 data "aws_lb_target_group" "green_tg" {
   count = var.manage_alb ? 0 : 1
-  name  = "green-morpher"
+  name  = "${var.environment}-green-morpher"
 }
 
 # Setting up a Blue Stack Listener for the Load Balancer
@@ -246,7 +265,7 @@ data "aws_instances" "blue_instances" {
   count = var.create_ec2_instances ? 0 : 1
   filter {
     name   = "tag:Name"
-    values = ["Billy-*"]
+    values = ["${var.environment}-Billy-*", "Billy-*"]
   }
   filter {
     name   = "instance-state-name"
@@ -258,7 +277,7 @@ data "aws_instances" "green_instances" {
   count = var.create_ec2_instances ? 0 : 1
   filter {
     name   = "tag:Name"
-    values = ["Tommy-*"]
+    values = ["${var.environment}-Tommy-*", "Tommy-*"]
   }
   filter {
     name   = "instance-state-name"
@@ -274,12 +293,28 @@ resource "aws_ec2_tag" "blue_instance_tags" {
   value       = var.active_env == "blue" ? "live" : "standby"
 }
 
+# Resource to manage environment tag for existing blue instances
+resource "aws_ec2_tag" "blue_instance_environment_tag" {
+  count       = var.create_ec2_instances ? 0 : length(data.aws_instances.blue_instances[0].ids)
+  resource_id = data.aws_instances.blue_instances[0].ids[count.index]
+  key         = "Environment"
+  value       = var.environment
+}
+
 # Resource to manage tags for existing green instances
 resource "aws_ec2_tag" "green_instance_tags" {
   count       = var.create_ec2_instances ? 0 : length(data.aws_instances.green_instances[0].ids)
   resource_id = data.aws_instances.green_instances[0].ids[count.index]
   key         = "EnvironmentStatus"
   value       = var.active_env == "green" ? "live" : "standby"
+}
+
+# Resource to manage environment tag for existing green instances
+resource "aws_ec2_tag" "green_instance_environment_tag" {
+  count       = var.create_ec2_instances ? 0 : length(data.aws_instances.green_instances[0].ids)
+  resource_id = data.aws_instances.green_instances[0].ids[count.index]
+  key         = "Environment"
+  value       = var.environment
 }
 
 # Sets up a Target Group Attachment for the Load Balancer to the Blue Instances
@@ -312,11 +347,11 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
   dashboard_body = jsonencode({
     widgets = [
       {
-        type       = "metric",
-        x          = 0,
-        y          = 0,
-        width      = 24,
-        height     = 6,
+        type   = "metric",
+        x      = 0,
+        y      = 0,
+        width  = 24,
+        height = 6,
         properties = {
           metrics = concat(
             [
@@ -343,15 +378,15 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
         }
       },
       {
-        type       = "metric",
-        x          = 0,
-        y          = 7,
-        width      = 24,
-        height     = 6,
+        type   = "metric",
+        x      = 0,
+        y      = 7,
+        width  = 24,
+        height = 6,
         properties = {
           metrics = [
-            [ "AWS/ApplicationELB", "RequestCount", "LoadBalancer", local.alb_arn ],
-            [ ".", "TargetResponseTime", "LoadBalancer", local.alb_arn ]
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", local.alb_metric_dimension],
+            [".", "TargetResponseTime", "LoadBalancer", local.alb_metric_dimension]
           ]
           period = 300
           stat   = "Sum"
@@ -360,11 +395,11 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
         }
       },
       {
-        type       = "text",
-        x          = 0,
-        y          = 13,
-        width      = 24,
-        height     = 3,
+        type   = "text",
+        x      = 0,
+        y      = 13,
+        width  = 24,
+        height = 3,
         properties = {
           markdown = "### Active stack\\nEnvironment: ${var.environment}\\nActive stack (blue/green): ${var.active_env}"
         }
@@ -375,7 +410,7 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
 
 # Setting up a CloudWatch Log Stream for EC2 Instance Logs
 resource "aws_cloudwatch_log_stream" "ec2_log_stream" {
-  count          = var.create_ec2_instances ? 1 : 0 
+  count          = var.create_ec2_instances ? 1 : 0
   name           = "ec2-instance-stream"
   log_group_name = aws_cloudwatch_log_group.ec2_log_group[0].name
 }

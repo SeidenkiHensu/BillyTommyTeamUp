@@ -29,7 +29,7 @@ variable "create_ec2_instances" {
 variable "active_env" {
   description = "Which environment is live: blue or green."
   type        = string
-  default     = "blue"
+  #  default     = "blue" #Commenting out to test if the workflow will still work
   validation {
     condition     = can(regex("^(blue|green)$", var.active_env))
     error_message = "active_env must be either 'blue' or 'green'."
@@ -47,7 +47,7 @@ variable "manage_alb" {
 variable "environment" {
   description = "Logical environment name for this deployment (e.g. sandbox, prod)."
   type        = string
-  default     = "sandbox"
+  #  default     = "sandbox" #Commenting out to test if the workflow will still work
 }
 
 # Setting up a variable for usernames. Having it set up as a list is so I can list multple users if need be
