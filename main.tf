@@ -2,12 +2,12 @@ terraform {
   required_version = ">= 1.12.2"
 
   #Need to specify the provider and version. (run "terraform providers" to see what's available. Then run "terraform init -upgrade" to update the provider.)
-#  required_providers {
-#    aws = {
-#      source  = "hashicorp/aws"
-#      version = ">= 5.0.0"
-#    }
-#  }
+  #  required_providers {
+  #    aws = {
+  #      source  = "hashicorp/aws"
+  #      version = ">= 5.0.0"
+  #    }
+  #  }
 }
 
 provider "aws" {
@@ -120,7 +120,7 @@ resource "aws_instance" "blue" {
     EnvironmentStatus = var.active_env == "blue" ? "live" : "standby"
     InstanceNum       = "${count.index + 1}"
     #Project           = "BillyTommyTeamUp" #Setup default tags to override this
-    Environment       = var.environment
+    Environment = var.environment
   }
 }
 
@@ -137,7 +137,7 @@ resource "aws_instance" "green" {
     EnvironmentStatus = var.active_env == "green" ? "live" : "standby"
     InstanceNum       = "${count.index + 1}"
     #Project           = "BillyTommyTeamUp" #Setup default tags to override this
-    Environment       = var.environment
+    Environment = var.environment
   }
 }
 
