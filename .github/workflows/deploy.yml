@@ -1,37 +1,142 @@
 name: CI/CD Blue-Green Deployment
 
 on:
+  pull_request:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Terraform action to run"
+        required: true
+        default: "apply"
+        type: choice
+        options:
+          - apply
+          - destroy
+      environment:
+        description: "Environment label for tagging (sandbox|prod)"
+        required: true
+        default: "sandbox"
+        type: choice
+        options:
+          - sandbox
+          - prod
+      active_env:
+        description: "Which stack is live (blue|green)"
+        required: true
+        default: "blue"
+        type: choice
+        options:
+          - blue
+          - green
 
 jobs:
-  deploy:
+  plan:
+    name: Terraform fmt/validate/plan
     runs-on: ubuntu-latest
     env:
       AWS_REGION: us-east-1
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.12.2
 
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v4
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Terraform Init
+      - name: Terraform fmt (check)
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
         run: terraform init
 
-      - name: Terraform Plan
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: TFLint
+        run: tflint --init && tflint
+
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          quiet: true
+
+      - name: Terraform plan
+        run: terraform plan
+
+  apply:
+    name: Terraform apply/destroy (manual)
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      AWS_REGION: us-east-1
+      TF_VAR_environment: ${{ inputs.environment }}
+      TF_VAR_active_env: ${{ inputs.active_env }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform plan
         run: terraform plan -out=tfplan
 
-      - name: Terraform Apply
+      - name: Terraform apply
+        if: ${{ inputs.action == 'apply' }}
         run: terraform apply -auto-approve tfplan
-        
+
+      - name: Terraform destroy
+        if: ${{ inputs.action == 'destroy' }}
+        run: terraform destroy -auto-approve
+
+      - name: Stop standby instances (cost control)
+        if: ${{ inputs.action == 'apply' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          IDS="$(aws ec2 describe-instances \
+            --region "${AWS_REGION}" \
+            --filters \
+              "Name=tag:Project,Values=BillyTommyTeamUp" \
+              "Name=tag:Environment,Values=${{ inputs.environment }}" \
+              "Name=tag:EnvironmentStatus,Values=standby" \
+              "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text)"
+
+          if [ -z "${IDS}" ]; then
+            echo "No standby instances to stop."
+            exit 0
+          fi
+
+          echo "Stopping standby instances: ${IDS}"
+          aws ec2 stop-instances --region "${AWS_REGION}" --instance-ids ${IDS}
+          aws ec2 wait instance-stopped --region "${AWS_REGION}" --instance-ids ${IDS}

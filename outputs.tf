@@ -9,7 +9,7 @@ output "load_balancer_dns" {
   description = "The DNS name of the application load balancer."
   value       = var.manage_alb ? aws_lb.app_lb[0].dns_name : data.aws_lb.existing_app_lb[0].dns_name
   #value       = aws_lb.app_lb.dns_name
-#  value       = var.create_alb ? aws_lb.app_lb.dns_name : ""
+  #value       = var.create_alb ? aws_lb.app_lb.dns_name : ""
 }
 
 output "alb_listener_port" {
@@ -17,7 +17,7 @@ output "alb_listener_port" {
 }
 
 output "alb_url" {
-  value = "http://${var.manage_alb ? aws_lb.app_lb[0].dns_name : data.aws_lb.existing_app_lb[0].dns_name}:${var.active_env == "blue" ? 80 : 81}"
+  value       = "http://${var.manage_alb ? aws_lb.app_lb[0].dns_name : data.aws_lb.existing_app_lb[0].dns_name}:${var.active_env == "blue" ? 80 : 81}"
   description = "URL to access the active stack listener"
 }
 
