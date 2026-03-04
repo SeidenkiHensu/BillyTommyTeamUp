@@ -150,10 +150,10 @@ resource "aws_lb" "app_lb" {
   subnets            = [aws_subnet.subnet_a.id, aws_subnet.subnet_b.id]
   security_groups    = [aws_security_group.ec2_sg.id]
 
-  # Prevent the ALB from being destroyed in the prod environment (once it exists)
-  lifecycle {
-    prevent_destroy = var.environment == "prod"
-  }
+  # Prevent the ALB from being destroyed in the prod environment (once it exists). This also needs to be fixed and tested.
+  #  lifecycle {
+  #    prevent_destroy = true
+  #  }
 
   tags = {
     Name        = "Command Center"
