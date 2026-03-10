@@ -2,12 +2,12 @@ terraform {
   required_version = ">= 1.12.2"
 
   #Need to specify the provider and version. (run "terraform providers" to see what's available. Then run "terraform init -upgrade" to update the provider.)
-  #  required_providers {
-  #    aws = {
-  #      source  = "hashicorp/aws"
-  #      version = ">= 5.0.0"
-  #    }
-  #  }
+    required_providers {
+      aws = {
+        source  = "hashicorp/aws"
+        version = ">= 5.0"
+      }
+    }
 }
 
 provider "aws" {
@@ -118,7 +118,7 @@ resource "aws_instance" "blue" {
     Name              = "${var.environment}-Billy-${count.index + 1}"
     Env               = "blue"
     EnvironmentStatus = var.active_env == "blue" ? "live" : "standby"
-    InstanceNum       = "${count.index + 1}"
+    InstanceNum       = count.index + 1
     #Project           = "BillyTommyTeamUp" #Setup default tags to override this
     Environment = var.environment
   }
@@ -135,7 +135,7 @@ resource "aws_instance" "green" {
     Name              = "${var.environment}-Tommy-${count.index + 1}"
     Env               = "green"
     EnvironmentStatus = var.active_env == "green" ? "live" : "standby"
-    InstanceNum       = "${count.index + 1}"
+    InstanceNum       = count.index + 1
     #Project           = "BillyTommyTeamUp" #Setup default tags to override this
     Environment = var.environment
   }
@@ -176,7 +176,7 @@ locals {
   blue_tg_arn  = var.manage_alb ? aws_lb_target_group.blue_tg[0].arn : data.aws_lb_target_group.blue_tg[0].arn
   green_tg_arn = var.manage_alb ? aws_lb_target_group.green_tg[0].arn : data.aws_lb_target_group.green_tg[0].arn
 
-  active_tg_arn = var.active_env == "blue" ? local.blue_tg_arn : local.green_tg_arn
+#  active_tg_arn = var.active_env == "blue" ? local.blue_tg_arn : local.green_tg_arn
 }
 
 # Creating the target groups for the Application Load Balancer
