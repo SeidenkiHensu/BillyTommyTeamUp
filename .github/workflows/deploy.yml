@@ -130,4 +130,3 @@ jobs:
                       "Name=instance-state-name,Values=running" \
             --query "Reservations[*].Instances[*].InstanceId" \
             --output text | xargs -r aws ec2 stop-instances --instance-ids
-            
