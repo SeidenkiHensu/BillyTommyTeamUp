@@ -8,17 +8,16 @@ output "active_stack" {
 output "load_balancer_dns" {
   description = "The DNS name of the application load balancer."
   value       = var.manage_alb ? aws_lb.app_lb[0].dns_name : data.aws_lb.existing_app_lb[0].dns_name
-  #value       = aws_lb.app_lb.dns_name
-#  value       = var.create_alb ? aws_lb.app_lb.dns_name : ""
 }
 
 output "alb_listener_port" {
-  value = var.active_env == "blue" ? 80 : 81
+  description = "HTTP listener port (single listener; traffic split is weighted to the active stack)."
+  value       = 80
 }
 
 output "alb_url" {
-  value = "http://${var.manage_alb ? aws_lb.app_lb[0].dns_name : data.aws_lb.existing_app_lb[0].dns_name}:${var.active_env == "blue" ? 80 : 81}"
-  description = "URL to access the active stack listener"
+  description = "URL to the ALB (port 80; default action forwards to the active stack target group)."
+  value       = "http://${var.manage_alb ? aws_lb.app_lb[0].dns_name : data.aws_lb.existing_app_lb[0].dns_name}/"
 }
 
 # Sets up an output for the CloudWatch dashboard name
