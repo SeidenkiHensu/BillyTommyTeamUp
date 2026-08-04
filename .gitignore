@@ -1,0 +1,21 @@
+# Cursor
+.cursor/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Optional: uncomment if you use a separate secrets file (keep terraform.tfvars tracked for this demo)
+# *.auto.tfvars
+# secrets.tfvars
