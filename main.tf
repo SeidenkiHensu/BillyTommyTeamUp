@@ -92,7 +92,7 @@ resource "aws_instance" "blue" {
     Name              = "${var.environment}-Billy-${count.index + 1}"
     Env               = "blue"
     EnvironmentStatus = var.active_env == "blue" ? "live" : "standby"
-    InstanceNum       = "${count.index + 1}"
+    InstanceNum       = count.index + 1
     Project           = "BillyTommyTeamUp"
     Environment       = var.environment
   }
@@ -109,7 +109,7 @@ resource "aws_instance" "green" {
     Name              = "${var.environment}-Tommy-${count.index + 1}"
     Env               = "green"
     EnvironmentStatus = var.active_env == "green" ? "live" : "standby"
-    InstanceNum       = "${count.index + 1}"
+    InstanceNum       = count.index + 1
     Project           = "BillyTommyTeamUp"
     Environment       = var.environment
   }
